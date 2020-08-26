@@ -56,6 +56,10 @@ Example
 >>> print(kit.setBridgeLED(led_setting=microspec.OFF))
 BridgeSetBridgeLED(status=0)
 
+TODO
+----
+Add the other API calls.
+
 """
 
 from microspeclib.simple import MicroSpecSimpleInterface

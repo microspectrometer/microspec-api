@@ -19,6 +19,13 @@ Example
 >>> microspec.GREEN
 1
 
+TODO
+----
+Finish adding constants:
+>>> import microspeclib.datatypes.types as dtypes
+>>> dtypes.__all__
+['StatusOK', 'StatusError', 'LEDOff', 'LEDGreen', 'LEDRed', 'BinningDefault', 'Gain1x', 'Gain2_5x', 'Gain4x', 'Gain5x', 'GainDefault', 'RowsDefault']
+
 """
 
 import microspeclib.datatypes.types as _dtypes
