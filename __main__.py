@@ -111,17 +111,23 @@ Command getBridgeLED has a default value for parameter led_num.
 
 getBridgeLED has parameter led_num
 >>> kit.getBridgeLED(led_num=0)
-ReplyToGetBridgeLED(status='OK', led_setting='GREEN')
+GetBridgeLED_reply(status='OK', led_setting='GREEN')
 
 getBridgeLED defaults parameter led_num to 0
 >>> kit.getBridgeLED()
-ReplyToGetBridgeLED(status='OK', led_setting='GREEN')
+GetBridgeLED_reply(status='OK', led_setting='GREEN')
 
 getBridgeLED led_num=0 is the only allowed value
 >>> kit.getBridgeLED(led_num=1)
-ReplyToGetBridgeLED(status='ERROR', led_setting=None)
+GetBridgeLED_reply(status='ERROR', led_setting=None)
 
 --left off here--
+ReplyToSetBridgeLED has attribute status
+>>> microspec.ReplyToSetBridgeLED(status=0)
+
+setBridgeLED has parameters led_num and led_setting
+>>> kit.setBridgeLED(led_num=0, led_setting=microspec.GREEN)
+
 setBridgeLED defaults to LED0
 >>> kit.setBridgeLED(led_setting=microspec.GREEN)
 
@@ -148,13 +154,14 @@ led_setting 2 is RED
 
 Each command has a reply defined with its own attributes.
 
-ReplyToGetBridgeLED has attribute status
+GetBridgeLED_reply has attribute status
 >>> reply = kit.getBridgeLED()
 >>> reply.status
 0
 >>> print(microspec.status_dict.get(reply.status))
+OK
 
-ReplyToGetBridgeLED has attribute led_setting
+GetBridgeLED_reply has attribute led_setting
 >>> reply = kit.getBridgeLED()
 >>> print(reply.led_setting)
 1
@@ -165,7 +172,7 @@ doctest.testmod(verbose=False, optionflags=doctest.FAIL_FAST)
 
 # import microspec
 # kit = microspec.Devkit()
-# kit.getBridgeLED()
+# print(kit.getBridgeLED())
 # kit.setSensorLED(led_num=1, led_setting=microspec.RED)
 # print(kit.getSensorLED(led_num=1))
 # print(f"led_setting {microspec.RED} is RED")

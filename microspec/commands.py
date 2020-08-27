@@ -62,9 +62,11 @@ Add the other API calls.
 
 """
 
+__all__ = ['Devkit']
+
 from microspeclib.simple import MicroSpecSimpleInterface
-from constants import *
-from replies import *
+from microspec.constants import *
+import microspec.replies as replies
 
 class Devkit(MicroSpecSimpleInterface):
     """Customize MicroSpecSimpleInterface methods."""
@@ -74,7 +76,7 @@ class Devkit(MicroSpecSimpleInterface):
             led_num: int = 0 # LED0 is the only Bridge LED
             ):
         _reply = super().getBridgeLED(led_num)
-        reply = ReplyToGetBridgeLED(
+        reply = replies.GetBridgeLED(
             status = status_dict.get(_reply.status),
             led_setting = led_dict.get(_reply.led_setting)
             )

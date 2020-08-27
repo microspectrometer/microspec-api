@@ -44,7 +44,21 @@ GREEN = _constants['LEDGreen']
 RED = _constants['LEDRed']
 OFF = _constants['LEDOff']
 OK = _constants['StatusOK']
+"""The dev-kit successfully executed the command.
+"""
+
 ERROR = _constants['StatusError']
+"""The dev-kit failed to execute the command.
+
+The usual cause is that the command was called with one or more
+invalid inputs (e.g., `getBridgeLED(led_num=1)`).
+
+Other possible reasons are:
+
+    - the command itself is invalid
+    - serial communication failed
+"""
+
 BINNING_OFF = 0
 BINNING_ON = 1
 GAIN1X = _constants['Gain1x']
