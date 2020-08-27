@@ -64,13 +64,31 @@ Add the other API calls.
 
 from microspeclib.simple import MicroSpecSimpleInterface
 from constants import *
+from replies import *
 
 class Devkit(MicroSpecSimpleInterface):
     """Customize MicroSpecSimpleInterface methods."""
 
+    def getBridgeLED(
+            self,
+            led_num: int = 0 # LED0 is the only Bridge LED
+            ):
+        _reply = super().getBridgeLED(led_num)
+        reply = ReplyToGetBridgeLED(
+            status = status_dict.get(_reply.status),
+            led_setting = led_dict.get(_reply.led_setting)
+            )
+        return reply
+
     def setBridgeLED(
-        self,
-        led_setting: int,
-        led_num: int = 0 # LED0 is the only LED on the Bridge.
-        ):
+            self,
+            led_setting: int,
+            led_num: int = 0 # LED0 is the only Bridge LED
+            ):
         return super().setBridgeLED(led_num, led_setting)
+
+    def getSensorLED(
+            self,
+            led_num : int
+            ):
+        return super().getSensorLED(led_num)
