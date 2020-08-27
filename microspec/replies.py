@@ -31,7 +31,7 @@ each command response. This creates a seam to:
 
 - add custom docstrings for each response
 """
-__all__ = ['GetBridgeLED']
+__all__ = ['getBridgeLED']
 """For developers:
 
 Docstring formatting
@@ -139,11 +139,11 @@ _common = {
     "replaces_int_with_str" : _replaces_int_with_str,
     }
 
-GetBridgeLED = namedtuple(
+getBridgeLED = namedtuple(
         'GetBridgeLED_reply',
         ['status', 'led_setting']
         )
-GetBridgeLED.__doc__ = """
+getBridgeLED.__doc__ = """
 Response to command `getBridgeLED`.
 
 Attributes

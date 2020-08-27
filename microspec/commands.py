@@ -66,6 +66,7 @@ __all__ = ['Devkit']
 
 from microspeclib.simple import MicroSpecSimpleInterface
 from microspec.constants import *
+# from microspec.replies import *
 import microspec.replies as replies
 
 class Devkit(MicroSpecSimpleInterface):
@@ -76,7 +77,7 @@ class Devkit(MicroSpecSimpleInterface):
             led_num: int = 0 # LED0 is the only Bridge LED
             ):
         _reply = super().getBridgeLED(led_num)
-        reply = replies.GetBridgeLED(
+        reply = replies.getBridgeLED(
             status = status_dict.get(_reply.status),
             led_setting = led_dict.get(_reply.led_setting)
             )
