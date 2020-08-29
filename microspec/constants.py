@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 """Convert microspeclib global constants to user-friendly names.
 
+For examples using this module, see doctests in
+:ref:`test-constants`.
+
 `globals` in `microspec/cfg/microspec.json` defines constants
 used the by the API.
 
@@ -11,20 +14,13 @@ code.
 `microspec` imports the constants.
 
 Application code imports `microspec`. Application code does not
-need to import `constants`.
+need to import `constants`. For example, access the constant
+``GREEN``:
 
-Example
--------
->>> import microspec
->>> microspec.GREEN
-1
+.. code-block:: python
 
-TODO
-----
-Finish adding constants:
->>> import microspeclib.datatypes.types as dtypes
->>> dtypes.__all__
-['StatusOK', 'StatusError', 'LEDOff', 'LEDGreen', 'LEDRed', 'BinningDefault', 'Gain1x', 'Gain2_5x', 'Gain4x', 'Gain5x', 'GainDefault', 'RowsDefault']
+   import microspec
+   microspec.GREEN
 
 """
 

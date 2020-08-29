@@ -1,139 +1,217 @@
-#!python.exe
 # -*- coding: utf-8 -*-
 """
-Check values of constants defined by microspec
+Unit test: Run package as a module
+----------------------------------
+
 >>> import microspec
 
-OK equals 0
+Package ``microspec`` unit tests are the doctests in this
+``__main__.py`` docstring.
+
+Setup
+^^^^^
+
+Connect a dev-kit over USB. Then run the tests with this command:
+
+.. code-block:: bash
+
+    python -m microspec
+
+.. _test-constants:
+
+Test microspec.constants
+------------------------
+
+Responses use a dictionary to get the string form of constants
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``OK`` maps to 0:
+
 >>> print(f"{microspec.status_dict.get(microspec.OK)} == {microspec.OK}")
 OK == 0
 
-ERROR equals 1 (StatusError)
+``ERROR`` maps to 1:
+
 >>> print(f"{microspec.status_dict.get(microspec.ERROR)} == {microspec.ERROR}")
 ERROR == 1
 
-OFF equals 0 (LedOff)
+``OFF`` maps to 0:
+
 >>> print(f"{microspec.led_dict.get(microspec.OFF)} == {microspec.OFF}")
 OFF == 0
 
-GREEN equals 1 (LedGreen)
+``GREEN`` maps to 1:
+
 >>> print(f"{microspec.led_dict.get(microspec.GREEN)} == {microspec.GREEN}")
 GREEN == 1
 
-RED equals 2 (LedRed)
+``RED`` maps to 2:
+
 >>> print(f"{microspec.led_dict.get(microspec.RED)} == {microspec.RED}")
 RED == 2
 
-BINNING_OFF equals 0
+``BINNING_OFF`` maps to 0:
+
 >>> print(f"{microspec.binning_dict.get(microspec.BINNING_OFF)} "
 ... f"== {microspec.BINNING_OFF}")
 BINNING_OFF == 0
 
-BINNING_ON equals 1
+``BINNING_ON`` maps to 1:
+
 >>> print(f"{microspec.binning_dict.get(microspec.BINNING_ON)} "
 ... f"== {microspec.BINNING_ON}")
 BINNING_ON == 1
 
-GAIN1X equals 1 (Gain1x)
+``GAIN1X`` maps to 1:
+
 >>> print(f"{microspec.gain_dict.get(microspec.GAIN1X)} "
 ... f"== {microspec.GAIN1X}")
 GAIN1X == 1
 
-GAIN2_5X equals 0x25 (Gain2_5x)
+``GAIN2_5X`` maps to 0x25:
+
 >>> print(f"{microspec.gain_dict.get(microspec.GAIN2_5X)} "
 ... f"== 0x{microspec.GAIN2_5X:X}")
 GAIN2_5X == 0x25
 
-GAIN4X equals 4 (Gain4x)
+``GAIN4X`` maps to 4:
+
 >>> print(f"{microspec.gain_dict.get(microspec.GAIN4X)} "
 ... f"== {microspec.GAIN4X}")
 GAIN4X == 4
 
-GAIN5X equals 5 (Gain5x)
+``GAIN5X`` maps to 5:
+
 >>> print(f"{microspec.gain_dict.get(microspec.GAIN5X)} "
 ... f"== {microspec.GAIN5X}")
 GAIN5X == 5
 
-ALL_ROWS equals 0x1F (RowsDefault)
+``ALL_ROWS`` maps to 0x1F:
+
 >>> print(f"{microspec.rows_dict.get(microspec.ALL_ROWS)} "
 ... f"== 0x{microspec.ALL_ROWS:X}")
 ALL_ROWS == 0x1F
 
-Check match between constants defined by microspec and microspeclib.
+Constants match if defined in both microspec and microspeclib
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-List constants defined by microspeclib
+List constants defined by microspeclib:
+
 >>> import microspeclib.datatypes.types as dtypes
 >>> dtypes.__all__
 ['StatusOK', 'StatusError', 'LEDOff', 'LEDGreen', 'LEDRed', 'BinningDefault', 'Gain1x', 'Gain2_5x', 'Gain4x', 'Gain5x', 'GainDefault', 'RowsDefault']
 
-OK equals StatusOK
+``OK`` equals ``StatusOK``:
+
 >>> microspec.OK == dtypes.StatusOK
 True
 
-ERROR equals StatusError
+``ERROR`` equals ``StatusError``:
+
 >>> microspec.ERROR == dtypes.StatusError
 True
 
-OFF equals LEDOff
+``OFF`` equals ``LEDOff``:
+
 >>> microspec.OFF == dtypes.LEDOff
 True
 
-GREEN equals LEDGreen
+``GREEN`` equals ``LEDGreen``:
+
 >>> microspec.GREEN == dtypes.LEDGreen
 True
 
-RED equals LEDRed
+``RED`` equals ``LEDRed``:
+
 >>> microspec.RED == dtypes.LEDRed
 True
 
-GAIN1X equals Gain1x
+``GAIN1X`` equals ``Gain1x``:
+
 >>> microspec.GAIN1X == dtypes.Gain1x
 True
 
-GAIN2_5X equals Gain2_5x
+``GAIN2_5X`` equals ``Gain2_5x``:
+
 >>> microspec.GAIN2_5X == dtypes.Gain2_5x
 True
 
-GAIN4X equals Gain4x
+``GAIN4X`` equals ``Gain4x``:
+
 >>> microspec.GAIN4X == dtypes.Gain4x
 True
 
-GAIN5X equals Gain5x
+``GAIN5X`` equals ``Gain5x``:
+
 >>> microspec.GAIN5X == dtypes.Gain5x
 True
 
-Instantiate Devkit to open serial communication
+.. _test-commands-and-responses:
+
+Test microspec.commands and microspec.replies
+---------------------------------------------
+
+Open serial communication by instantiating Devkit
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 >>> kit = microspec.Devkit()
 >>> kit.serial.is_open
 True
 
-Command getBridgeLED has a default value for parameter led_num.
+Test setup
+^^^^^^^^^^
 
-getBridgeLED has parameter led_num
->>> kit.getBridgeLED(led_num=0)
-GetBridgeLED_reply(status='OK', led_setting='GREEN')
+Set the bridge LED before testing ``getBridgeLED``
 
-getBridgeLED defaults parameter led_num to 0
->>> kit.getBridgeLED()
-GetBridgeLED_reply(status='OK', led_setting='GREEN')
-
-getBridgeLED led_num=0 is the only allowed value
->>> kit.getBridgeLED(led_num=1)
-GetBridgeLED_reply(status='ERROR', led_setting=None)
-
---left off here--
-ReplyToSetBridgeLED has attribute status
->>> microspec.ReplyToSetBridgeLED(status=0)
-
-setBridgeLED has parameters led_num and led_setting
 >>> kit.setBridgeLED(led_num=0, led_setting=microspec.GREEN)
+setBridgeLED_response(status='OK')
 
-setBridgeLED defaults to LED0
+Test the different ways to send each command
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Call ``getBridgeLED`` with its optional parameter:
+
+>>> kit.getBridgeLED(led_num=0)
+getBridgeLED_response(status='OK', led_setting='GREEN')
+
+Call ``getBridgeLED`` without its optional parameter:
+
+>>> kit.getBridgeLED()
+getBridgeLED_response(status='OK', led_setting='GREEN')
+
+Call ``getBridgeLED`` with an invalid parameter value:
+
+>>> kit.getBridgeLED(led_num=1)
+getBridgeLED_response(status='ERROR', led_setting=None)
+
+Call ``setBridgeLED`` with its optional parameter:
+
+>>> kit.setBridgeLED(led_num=0, led_setting=microspec.GREEN)
+setBridgeLED_response(status='OK')
+
+Call ``setBridgeLED`` without its optional parameter:
+
 >>> kit.setBridgeLED(led_setting=microspec.GREEN)
+setBridgeLED_response(status='OK')
 
-getSensorLED does not have default parameters
->>> print(kit.getSensorLED())
-TypeError: getSensorLED() missing 1 required positional argument: 'led_num'
+Call ``setBridgeLED`` with an invalid parameter value:
+
+>>> kit.setBridgeLED(led_num=1, led_setting=microspec.GREEN)
+setBridgeLED_response(status='ERROR')
+
+---left off here---
+
+``getSensorLED`` always replies LED0 is ``OFF``
+
+>>> # Setup: make LED0 green
+>>> kit.setSensorLED(led_num=0, led_setting=microspec.GREEN)
+setSensorLED_response(status='OK')
+>>> # Test: still replies that LED0 is off
+>>> kit.getSensorLED(led_num=0)
+getSensorLED_response(status='OK', led_setting='OFF')
+
+*LED0 turns OFF to indicate the Sensor board is busy executing
+commands*
 
 getSensorLED LED0 always returns 0 because LED0 indicates busy
 >>> kit.setSensorLED(led_num=0, led_setting=1)

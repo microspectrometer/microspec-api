@@ -10,9 +10,9 @@ Welcome to microspec's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   replies
-
-
+   microspec
+   userdocs
+   devdocs
 
 Indices and tables
 ==================
