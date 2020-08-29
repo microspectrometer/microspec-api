@@ -11,6 +11,7 @@ Welcome to microspec's documentation!
    :caption: Contents:
 
    microspec
+   microspeclib
    userdocs
    devdocs
 

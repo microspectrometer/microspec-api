@@ -1,6 +1,14 @@
 # -*- coding: utf-8 -*-
 """Format command responses for use in applications."""
-__all__ = ['getBridgeLED_response']
+# __all__ = [
+#     'getBridgeLED_response',
+#     'setBridgeLED_response',
+#     'getSensorLED_response',
+#     'setSensorLED_response',
+#     'getSensorLED_response',
+#     'setSensorConfig_response',
+#     'setExposure_response',
+#     ]
 
 from collections import namedtuple
 
@@ -138,3 +146,23 @@ See Also
 --------
 ~microspec.commands.Devkit.setSensorLED
 """.format(**_common)
+
+getSensorConfig_response = namedtuple(
+        'getSensorConfig_response',
+        ['status', 'binning', 'gain', 'row_bitmap']
+        )
+
+setSensorConfig_response = namedtuple(
+        'setSensorConfig_response',
+        ['status']
+        )
+
+setExposure_response = namedtuple(
+        'setExposure_response',
+        ['status']
+        )
+
+getExposure_response = namedtuple(
+        'getExposure_response',
+        ['status', 'ms', 'cycles']
+        )

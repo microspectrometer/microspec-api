@@ -62,6 +62,8 @@ GAIN2_5X = _constants['Gain2_5x']
 GAIN4X = _constants['Gain4x']
 GAIN5X = _constants['Gain5x']
 ALL_ROWS = _constants['RowsDefault']
+MAX_CYCLES = 65500 # 1310 milliseconds
+MIN_CYCLES = 1 # 0.02 milliseconds
 
 # Define user-friendly dicts to look up names from values in context.
 _status_constants   = [ OK,   ERROR ]
@@ -76,5 +78,5 @@ binning_dict = dict(zip(_binning_constants, _binning_names))
 _gain_constants  = [ GAIN1X,   GAIN2_5X,   GAIN4X,   GAIN5X ]
 _gain_names      = ['GAIN1X', 'GAIN2_5X', 'GAIN4X', 'GAIN5X']
 gain_dict = dict(zip(_gain_constants, _gain_names))
-rows_dict = {ALL_ROWS: 'ALL_ROWS'}
+row_dict = {ALL_ROWS: 'ALL_ROWS'}
 

@@ -19,6 +19,16 @@ Use the ``microspec`` package in an application:
     import microspec
     kit = microspec.Devkit()
 
+If the application uses ``microspec`` beyond the initial ``kit =
+microspec.Devkit()``, Chromation recommends importing
+``microspec`` *bound* as ``usp``:
+
+.. code-block:: python
+
+    import microspec as usp
+    kit = usp.Devkit()
+    kit.setBridgeLED(led_setting = usp.OFF)
+
 Module List
 -----------
 
@@ -26,7 +36,7 @@ The ``microspec`` package has three modules:
 :mod:`~microspec.commands`, :mod:`~microspec.constants`, and
 :mod:`~microspec.replies`
 
-:mod:`~microspec.commands`
+:mod:`microspec.commands`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - defines class :class:`~microspec.commands.Devkit`
@@ -35,10 +45,11 @@ The ``microspec`` package has three modules:
 
 .. code-block:: python
 
+    import microspec
     kit = microspec.Devkit()
     kit.getBridgeLED()
 
-:mod:`~microspec.constants`
+:mod:`microspec.constants`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - defines names for constants
@@ -46,10 +57,9 @@ The ``microspec`` package has three modules:
 
 .. code-block:: python
 
-    >>> microspec.OK
-    0
-    >>> microspec.ERROR
-    1
+    import microspec as usp
+    usp.OK      # equals int 0
+    usp.ERROR   # equals int 1
 
 - defines dictionaries for converting an integer code to its
   constant's name
@@ -57,21 +67,23 @@ The ``microspec`` package has three modules:
 
 .. code-block:: python
 
-    >>> microspec.status_dict.get(0)
-    'OK'
-    >>> microspec.status_dict.get(microspec.OK)
-    'OK'
+    import microspec as usp
+    usp.status_dict.get(usp.OK) # returns str 'OK'
 
-- values of the constants match the ``globals`` section of
-  JSON file ``microspec/cfg/microspec.json``
+- values of the constants match the ``globals`` section of the
+  :ref:`JSON API config file <dev-kit-API-JSON>`
 
-:mod:`~microspec.replies`
+:mod:`microspec.replies`
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. note::
 
-    Application code does not directly use the
-    :mod:`~microspec.replies` module.
+    Do not directly use the :mod:`~microspec.replies` module in
+    application code.
+
+    The :mod:`~microspec.commands` module uses
+    :mod:`~microspec.replies` to format responses. Application
+    code should never need to instantiate a response.
 
 - defines a namedtuple for the response to each command
 - class ``Devkit`` uses ``replies`` to re-package the
@@ -79,3 +91,4 @@ The ``microspec`` package has three modules:
 """
 from .commands import * # class Devkit
 from .constants import * # OK, ERROR, OFF, GREEN, RED, etc.
+from .helpers import * # to_cycles(), to_ms()
