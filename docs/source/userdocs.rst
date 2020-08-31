@@ -8,3 +8,4 @@ Dev-kit API
    microspec.commands
    microspec.replies
    microspec.constants
+   microspec.helpers
