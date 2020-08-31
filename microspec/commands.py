@@ -91,6 +91,17 @@ class Devkit(MicroSpecSimpleInterface):
             cycles : int = None # OR time in cycles
             ):
         # Exposure time units are either ms or cycles
+        if ms == None and cycles == None:
+            raise TypeError(
+                "setExposure() missing 1 required argument: "
+                "'ms' or 'cycles'"
+                )
+        if ms != None and cycles != None:
+            raise TypeError(
+                "setExposure() got an unexpected keyword "
+                "'cycles' (requires 'ms' or 'cycles' but "
+                "received both)"
+                )
         if ms == None: time = cycles
         else: time = to_cycles(ms)
 
@@ -112,3 +123,6 @@ class Devkit(MicroSpecSimpleInterface):
                 cycles = _reply.cycles
                 )
         return reply
+
+    def captureFrame(self):
+        return super().captureFrame()
