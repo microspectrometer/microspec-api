@@ -393,6 +393,22 @@ setExposure_response(status='OK')
 >>> kit.setExposure(cycles=250)
 setExposure_response(status='OK')
 
+``setExposure`` requires an exposure time input
+
+>>> kit.setExposure()
+Traceback (most recent call last):
+    ...
+TypeError: setExposure() missing 1 required argument: 'ms' or 'cycles'
+
+Calling ``setExposure`` with both ``ms`` and ``cycles`` is not
+allowed:
+
+>>> kit.setExposure(ms=5.0, cycles=250)
+Traceback (most recent call last):
+    ...
+TypeError: setExposure() got an unexpected keyword 'cycles' \
+(requires 'ms' or 'cycles' but received both)
+
 ``setExposure`` clamps time to the allowed range:
 
 >>> # Test clamping exposure time to MAX
@@ -427,6 +443,37 @@ setExposure_response(status='OK')
 >>> kit.getExposure()
 getExposure_response(status='OK', ms=5.0, cycles=250)
 
+*captureFrame*
+
+>>> reply = kit.captureFrame()
+
+The frame is stored as a Python ``list`` of numbers. Each number
+is the signal strength at that pixel in units of *counts*.
+
+The list starts with pixel 1. With pixel binning on, the frame
+has 392 pixels, so the list ends with pixel 392:
+
+>>> print(reply)
+SensorCaptureFrame(status=0, num_pixels=392, pixels=[...])
+
+The list ``pixels`` is hard to read on its own. Tag each pixel
+with its pixel number. Turn the ``(pixnum,pixel)`` pairs into
+a list of ``tuples`` with ``list(zip(pixnum,pixels))`` or, as
+shown in this example, into a ``dict``:
+
+>>> frame = dict(zip(range(1,reply.num_pixels+1), reply.pixels))
+>>> print(frame)
+{1: ..., 2: ..., ..., 391: ..., 392: ...}
+
+This is still hard to read. Put each pixel on its own line:
+
+>>> import pprint
+>>> pprint.pprint(frame)
+{1: ...,
+ 2: ...,
+ ...
+ 391: ...,
+ 392: ...}
 
 **Next command to test**
 
@@ -436,40 +483,40 @@ getExposure_response(status='OK', ms=5.0, cycles=250)
 Test attributes of microspec.replies
 ------------------------------------
 
-Response to ``setBridgeLED`` has attribute ``status``:
-
->>> reply = kit.setBridgeLED(led_setting=usp.GREEN)
->>> reply.status
-'OK'
-
-Response to ``setSensorLED`` has attribute ``status``:
-
->>> reply = kit.setSensorLED(led_num=0,led_setting=usp.GREEN)
->>> reply.status
-'OK'
-
-Response to ``getBridgeLED`` has attributes ``status`` and
-``led_setting``:
+All commands respond with the attribute ``status``:
 
 >>> reply = kit.getBridgeLED()
 >>> reply.status
 'OK'
->>> reply.led_setting
-'GREEN'
-
-Response to ``getSensorLED`` has attributes ``status`` and
-``led_setting``:
-
+>>> reply = kit.setBridgeLED(led_setting=usp.GREEN)
+>>> reply.status
+'OK'
 >>> reply = kit.getSensorLED(led_num=0)
 >>> reply.status
 'OK'
+>>> reply = kit.setSensorLED(led_num=0, led_setting=usp.GREEN)
+>>> reply.status
+'OK'
+>>> reply = kit.getExposure()
+>>> reply.status
+'OK'
+
+Response to ``getBridgeLED`` has attribute ``led_setting``:
+
+>>> reply = kit.getBridgeLED()
+>>> reply.led_setting
+'GREEN'
+
+Response to ``getSensorLED`` has attribute ``led_setting``:
+
+>>> reply = kit.getSensorLED(led_num=0)
 >>> reply.led_setting
 'OFF'
 
 """
 
 import doctest
-doctest.testmod(verbose=False, optionflags=doctest.FAIL_FAST)
+doctest.testmod(verbose=False, optionflags=doctest.ELLIPSIS | doctest.FAIL_FAST)
 
 # import microspec
 # kit = microspec.Devkit()
