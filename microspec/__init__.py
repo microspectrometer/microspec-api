@@ -1,4 +1,4 @@
-"""Package ``microspec`` is the API for the Chromation Spectrometer dev-kit.
+"""Module ``microspec`` is the API for the Chromation Spectrometer dev-kit.
 
 Install
 -------
@@ -12,7 +12,7 @@ Install the ``microspec`` project:
 Usage
 -----
 
-Use the ``microspec`` package in an application:
+Use the ``microspec`` module in an application:
 
 .. code-block:: python
 
@@ -32,12 +32,12 @@ microspec.Devkit()``, Chromation recommends importing
 Module List
 -----------
 
-The ``microspec`` package has four modules:
+The ``microspec`` module has four sub-modules:
 :mod:`~microspec.commands`, :mod:`~microspec.constants`,
 :mod:`~microspec.replies`, and :mod:`~microspec.helpers`.
 
 :mod:`microspec.commands`
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 :mod:`~microspec.commands` defines **class**
 :class:`~microspec.commands.Devkit`:
@@ -57,15 +57,19 @@ Example:
 
    kit.getBridgeLED()
 
+See the full list of commands in :mod:`microspec.commands`.
+
 .. note::
 
    The dev-kit commands are defined in the ``protocol.command``
    object of the :ref:`JSON API config file <dev-kit-API-JSON>`.
-   The keys are the byte values sent over serial to represent the
-   command. The values are objects that name the command and
-   describe its parameters and byte format. These names are
-   identical to the method names of ``Devkit`` except that the
-   first letter is capitalized.
+
+   - the **keys** are the **byte values** sent over serial to
+     represent the command
+   - the **values** are objects that **name the command** and
+     describe its **parameters** and **byte format**.
+   - **command names** are identical to the method names of
+     ``Devkit`` except that the first letter is capitalized.
 
 :mod:`microspec.constants`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -82,7 +86,9 @@ communication protocol.
      usp.OK    # <---------------------- equals int 0
      usp.ERROR # <---------------------- equals int 1
 
-:mod:`~microspec.constants` provides **dictionaries** for
+See the full :ref:`list-of-constants`.
+
+:mod:`~microspec.constants` also provides **dictionaries** for
 converting a constant's **integer code** into a **string name**
 
   Example:
@@ -99,19 +105,26 @@ converting a constant's **integer code** into a **string name**
      :mod:`~microspec.replies` uses these dictionaries to make
      command responses human-readable.
 
-  .. note::
+See the :ref:`test_constants-source` for examples using all
+constants and all dicts in :mod:`~microspec.constants`.
 
-     Values of the constants match the values in the ``globals``
-     object in the :ref:`JSON API config file
-     <dev-kit-API-JSON>`. Names of the constants are similar to
-     the keys in the ``globals`` object, but the names are
-     capitalized. Where possible, names are shortened for
-     readability.
+Values of the constants match the values in the ``globals``
+object in the :ref:`JSON API config file <dev-kit-API-JSON>`.
 
-     :mod:`~microspec.constants` defines additional constants
-     ``MAX_CYCLES`` and ``MIN_CYCLES``. These are hard-coded in
-     the dev-kit firmware but are not (yet) listed in the JSON
-     config file.
+Consistency between constants defined in ``microspec`` and
+``microspeclib`` is pinned by the unit tests in
+:class:`~microspec.tests.test_constants.TestConsistent_with_microspeclib`.
+
+.. note::
+
+   Names of the constants are similar to the keys in the
+   ``globals`` object, but the names are capitalized. Where
+   possible, names are shortened for readability.
+
+:mod:`~microspec.constants` defines additional constants
+``MAX_CYCLES`` and ``MIN_CYCLES``. These are hard-coded in the
+dev-kit firmware but are not (yet) listed in the JSON config
+file.
 
 :mod:`microspec.replies`
 ^^^^^^^^^^^^^^^^^^^^^^^^^

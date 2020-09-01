@@ -18,138 +18,44 @@ Connect a dev-kit over USB. Then run the tests with this command:
 Doctest setup
 ^^^^^^^^^^^^^
 
-Import as ``usp`` to make doctests easier to read:
+The examples import ``microspec`` as ``usp`` to make the examples
+easier to read:
 
 >>> import microspec as usp
 
 .. _test-constants:
 
-Test microspec.constants
-------------------------
+Doctest examples for microspec.constants
+----------------------------------------
+
+>>> usp.OK
+0
+>>> usp.ERROR
+1
+>>> usp.OFF
+0
+>>> usp.GREEN
+1
+>>> usp.RED
+2
+
+See the full :ref:`list-of-constants`.
 
 Responses use a dictionary to get the string form of constants
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``OK`` maps to 0:
+``usp.OK`` maps to the string 'OK':
 
->>> print(f"{usp.status_dict.get(usp.OK)} == {usp.OK}")
-OK == 0
+>>> usp.status_dict.get(usp.OK)
+'OK'
 
-``ERROR`` maps to 1:
+``usp.ALL_ROWS`` maps to 0x1F:
 
->>> print(f"{usp.status_dict.get(usp.ERROR)} == {usp.ERROR}")
-ERROR == 1
+>>> usp.row_dict.get(usp.ALL_ROWS)
+'ALL_ROWS'
 
-``OFF`` maps to 0:
-
->>> print(f"{usp.led_dict.get(usp.OFF)} == {usp.OFF}")
-OFF == 0
-
-``GREEN`` maps to 1:
-
->>> print(f"{usp.led_dict.get(usp.GREEN)} == {usp.GREEN}")
-GREEN == 1
-
-``RED`` maps to 2:
-
->>> print(f"{usp.led_dict.get(usp.RED)} == {usp.RED}")
-RED == 2
-
-``BINNING_OFF`` maps to 0:
-
->>> print(f"{usp.binning_dict.get(usp.BINNING_OFF)} "
-... f"== {usp.BINNING_OFF}")
-BINNING_OFF == 0
-
-``BINNING_ON`` maps to 1:
-
->>> print(f"{usp.binning_dict.get(usp.BINNING_ON)} "
-... f"== {usp.BINNING_ON}")
-BINNING_ON == 1
-
-``GAIN1X`` maps to 1:
-
->>> print(f"{usp.gain_dict.get(usp.GAIN1X)} "
-... f"== {usp.GAIN1X}")
-GAIN1X == 1
-
-``GAIN2_5X`` maps to 0x25:
-
->>> print(f"{usp.gain_dict.get(usp.GAIN2_5X)} "
-... f"== 0x{usp.GAIN2_5X:X}")
-GAIN2_5X == 0x25
-
-``GAIN4X`` maps to 4:
-
->>> print(f"{usp.gain_dict.get(usp.GAIN4X)} "
-... f"== {usp.GAIN4X}")
-GAIN4X == 4
-
-``GAIN5X`` maps to 5:
-
->>> print(f"{usp.gain_dict.get(usp.GAIN5X)} "
-... f"== {usp.GAIN5X}")
-GAIN5X == 5
-
-``ALL_ROWS`` maps to 0x1F:
-
->>> print(f"{usp.row_dict.get(usp.ALL_ROWS)} "
-... f"== 0x{usp.ALL_ROWS:X}")
-ALL_ROWS == 0x1F
-
-Constants match if defined in both microspec and microspeclib
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-List constants defined by microspeclib:
-
->>> import microspeclib.datatypes.types as dtypes
->>> dtypes.__all__
-['StatusOK', 'StatusError', 'LEDOff', 'LEDGreen', 'LEDRed', 'BinningDefault', 'Gain1x', 'Gain2_5x', 'Gain4x', 'Gain5x', 'GainDefault', 'RowsDefault']
-
-``OK`` equals ``StatusOK``:
-
->>> usp.OK == dtypes.StatusOK
-True
-
-``ERROR`` equals ``StatusError``:
-
->>> usp.ERROR == dtypes.StatusError
-True
-
-``OFF`` equals ``LEDOff``:
-
->>> usp.OFF == dtypes.LEDOff
-True
-
-``GREEN`` equals ``LEDGreen``:
-
->>> usp.GREEN == dtypes.LEDGreen
-True
-
-``RED`` equals ``LEDRed``:
-
->>> usp.RED == dtypes.LEDRed
-True
-
-``GAIN1X`` equals ``Gain1x``:
-
->>> usp.GAIN1X == dtypes.Gain1x
-True
-
-``GAIN2_5X`` equals ``Gain2_5x``:
-
->>> usp.GAIN2_5X == dtypes.Gain2_5x
-True
-
-``GAIN4X`` equals ``Gain4x``:
-
->>> usp.GAIN4X == dtypes.Gain4x
-True
-
-``GAIN5X`` equals ``Gain5x``:
-
->>> usp.GAIN5X == dtypes.Gain5x
-True
+See :mod:`~microspec.tests.test_constants` for the complete set
+of tests.
 
 .. _test-commands-and-responses:
 

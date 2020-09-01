@@ -9,3 +9,4 @@ Dev-kit API
    microspec.replies
    microspec.constants
    microspec.helpers
+   tests
