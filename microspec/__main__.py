@@ -1,66 +1,55 @@
 # -*- coding: utf-8 -*-
 """
-Unit tests
-----------
+To run the documentation examples and/or the unit test suite, first
+connect a dev-kit over USB.
 
-Run package as a module
-^^^^^^^^^^^^^^^^^^^^^^^
+Run the documentation examples
+------------------------------
 
-Package ``microspec`` unit tests are the doctests in the
-:mod:`microspec.__main__.py` docstring.
-
-Connect a dev-kit over USB. Then run the tests with this command:
+The examples in the documentation are tested with ``doctest``. Running
+:mod:`microspec.__main__` runs all of the documentation examples:
 
 .. code-block:: bash
 
     python -m microspec
 
-Doctest setup
-^^^^^^^^^^^^^
+Running the documentation examples only requires installing
+``microspec``, it does not require cloning the project repository.
 
-The examples import ``microspec`` as ``usp`` to make the examples
-easier to read:
+Run the unit tests
+------------------
 
->>> import microspec as usp
+Running unit tests requires cloning the project repository. Unit tests
+are in the ``tests`` folder of the ``microspec`` module.
 
-.. _test-constants:
+First clone the project repository:
 
-Doctest examples for microspec.constants
-----------------------------------------
+.. code-block:: bash
 
->>> usp.OK
-0
->>> usp.ERROR
-1
->>> usp.OFF
-0
->>> usp.GREEN
-1
->>> usp.RED
-2
+    git clone https://github.com/microspectrometer/microspec.git
+    cd microspec/microspec/tests
 
-See the full :ref:`list-of-constants`.
+These tests are completely separate from the top-level ``tests`` folder
+which is for the ``microspeclib`` module. The ``tests`` inside the
+``microspec`` module all require the physical dev-kit, while the
+underlying ``microspeclib`` will skip hardware tests if no hardware is
+connected.
 
-Responses use a dictionary to get the string form of constants
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``pytest`` without any options reports if all tests pass:
 
-``usp.OK`` maps to the string 'OK':
+.. code-block:: bash
 
->>> usp.status_dict.get(usp.OK)
-'OK'
+    pytest
 
-``usp.ALL_ROWS`` maps to 0x1F:
+Use option ``--testdox`` to read the test names as a form of
+documentation:
 
->>> usp.row_dict.get(usp.ALL_ROWS)
-'ALL_ROWS'
+.. code-block:: bash
 
-See :mod:`~microspec.tests.test_constants` for the complete set
-of tests.
+    pytest --testdox
 
-.. _test-commands-and-responses:
-
-Test microspec.commands and microspec.replies
----------------------------------------------
+Devkit behavior
+---------------
 
 Open serial communication by instantiating Devkit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -69,86 +58,37 @@ Open serial communication by instantiating Devkit
 >>> kit.serial.is_open
 True
 
-.. _test-indicator-LED-commands:
+Serial communication closes automatically when the application exits.
 
-Setup for indicator-LED tests
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+There are three cases that are not applications: the REPL, docstring
+examples, and unit tests.
 
-Set all LEDs to a known state
+- *REPL* -- communication closes when you ``exit()`` the REPL
+- *examples in docstrings* -- communication closes when the docstring ends
+- *unit tests* -- ``conftest.py`` defines a test fixture that opens
+  communication for the entire ``pytest`` test session, so communication
+  closes when the test session ends.
 
->>> kit.setBridgeLED(led_num=0, led_setting=usp.GREEN)
-setBridgeLED_response(status='OK')
+Indicator LEDs
+^^^^^^^^^^^^^^
 
->>> kit.setSensorLED(led_num=0, led_setting=usp.GREEN)
-setSensorLED_response(status='OK')
+The indicator LED on the **Bridge board** defaults to ``GREEN``. It is
+available for dev-kit users to control in their application code.
 
->>> kit.setSensorLED(led_num=1, led_setting=usp.GREEN)
-setSensorLED_response(status='OK')
+The two indicator LEDs on the **Sensor board** are controlled by
+firmware and are **not intended** for dev-kit users to control in an
+application.
 
-Test indicator LED commands
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Indicator LEDs on the Sensor board
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**getBridgeLED**
+Sensor ``led0`` indicates *busy*:
 
-Call ``getBridgeLED`` with its optional parameter:
-
->>> kit.getBridgeLED(led_num=0)
-getBridgeLED_response(status='OK', led_setting='GREEN')
-
-Call ``getBridgeLED`` without its optional parameter:
-
->>> kit.getBridgeLED()
-getBridgeLED_response(status='OK', led_setting='GREEN')
-
-Call ``getBridgeLED`` with an invalid parameter value:
-
->>> kit.getBridgeLED(led_num=1)
-getBridgeLED_response(status='ERROR', led_setting=None)
-
-**setBridgeLED**
-
-Call ``setBridgeLED`` with its optional parameter:
-
->>> kit.setBridgeLED(led_num=0, led_setting=usp.GREEN)
-setBridgeLED_response(status='OK')
-
-Call ``setBridgeLED`` without its optional parameter:
-
->>> kit.setBridgeLED(led_setting=usp.GREEN)
-setBridgeLED_response(status='OK')
-
-Call ``setBridgeLED`` with an invalid parameter value:
-
->>> kit.setBridgeLED(led_num=1, led_setting=usp.GREEN)
-setBridgeLED_response(status='ERROR')
-
-**getSensorLED**
-
-``getSensorLED`` has no optional parameters:
-
->>> kit.getSensorLED()
-Traceback (most recent call last):
-    ...
-TypeError: getSensorLED() missing 1 required positional argument: 'led_num'
-
-**setSensorLED**
-
-``setSensorLED`` has no optional parameters:
-
->>> kit.setSensorLED()
-Traceback (most recent call last):
-    ...
-TypeError: setSensorLED() missing 2 required positional arguments: 'led_num' and 'led_setting'
-
-**Sensor LED behavior**
+- ``led0`` is **OFF** while the Sensor board is **busy**
+  executing a command
+- ``led0`` is **ON** when execution is **done**
 
 .. note::
-
-    Sensor ``led0`` indicates *busy*:
-
-    - ``led0`` is **OFF** while the Sensor board is **busy**
-      executing a command
-    - ``led0`` is **ON** when execution is **done**
 
     Sensor ``led0`` should **always** be **GREEN** when it is on.
 
@@ -157,65 +97,19 @@ TypeError: setSensorLED() missing 2 required positional arguments: 'led_num' and
     never seen this error occur in practice. *Please contact
     Chromation if you encounter this condition.*
 
-    Sensor ``led1`` indicates *auto-expose status*:
+Sensor ``led1`` indicates *auto-expose status*:
 
-    - ``led1`` is **RED** while auto-expose is **busy**
-    - ``led1`` stays **RED** if auto-expose **fails**
-    - ``led1`` turns **GREEN** if auto-expose **succeeds**
+- ``led1`` is **RED** while auto-expose is **busy**
+- ``led1`` stays **RED** if auto-expose **fails**
+- ``led1`` turns **GREEN** if auto-expose **succeeds**
 
-.. warning::
-
-    *Sensor LEDs are controlled by firmware.* Chromation
-    recommends that applications:
-
-    - do not call ``setSensorLED`` for ``led0`` and ``led1``
-
-        - this will lead to confusing LED behavior and defeat the
-          point of the Sensor board's indicator LEDs
-
-    - do not call ``getSensorLED`` for ``led0``
-
-        - this is harmless, but there is no point because it will
-          always report the LED is ``OFF``
-
-``getSensorLED`` always replies ``led0`` is ``OFF``:
-
->>> # Setup: make ``led0`` green
->>> kit.setSensorLED(led_num=0, led_setting=usp.GREEN)
-setSensorLED_response(status='OK')
->>> # Test: ``led0`` looks green but replies that ``led0`` is off
->>> kit.getSensorLED(led_num=0)
-getSensorLED_response(status='OK', led_setting='OFF')
->>> # Test: ``led0`` turns back ON after executing this command
->>> kit.setSensorLED(led_num=0, led_setting=usp.OFF)
-setSensorLED_response(status='OK')
->>> # Test: Turn ``led0`` RED (don't do this in an application)
->>> kit.setSensorLED(led_num=0, led_setting=usp.RED)
-setSensorLED_response(status='OK')
->>> # Teardown: Put ``led0`` back to GREEN
->>> kit.setSensorLED(led_num=0, led_setting=usp.GREEN)
-setSensorLED_response(status='OK')
-
-``getSensorLED`` replies GREEN if ``led1`` is GREEN:
-
->>> # Setup: make ``led1`` green
->>> kit.setSensorLED(led_num=1, led_setting=usp.GREEN)
-setSensorLED_response(status='OK')
->>> # Test: Reply indicates green
->>> kit.getSensorLED(led_num=1)
-getSensorLED_response(status='OK', led_setting='GREEN')
-
-``getSensorLED`` replies RED if ``led1`` is RED:
-
->>> # Setup: make ``led1`` red
->>> kit.setSensorLED(led_num=1, led_setting=usp.RED)
-setSensorLED_response(status='OK')
->>> # Test: Reply indicates red
->>> kit.getSensorLED(led_num=1)
-getSensorLED_response(status='OK', led_setting='RED')
->>> # Teardown: Put ``led1`` back to GREEN
->>> kit.setSensorLED(led_num=1, led_setting=usp.GREEN)
-setSensorLED_response(status='OK')
+Nothing bad happens if reading/writing the sensor LEDs, but the firmware
+uses these LEDs for visual indication about its state. Reading or
+writing the LED states in an application will have unpredictable
+results. Reading sensor LED1 does have predictable results -- it
+indicates success/failure of auto-expose -- but it is more direct for
+application code to read the ``success`` attribute of the
+``autoExposure`` response.
 
 Test spectrometer configuration commands
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -228,11 +122,6 @@ Test spectrometer configuration commands
 ...     row_bitmap = usp.ALL_ROWS
 ...     )
 setSensorConfig_response(status='OK')
-
-**getSensorConfig**
-
->>> print(kit.getSensorConfig())
-getSensorConfig_response(status='OK', binning='BINNING_ON', gain='GAIN1X', row_bitmap='ALL_ROWS')
 
 Test exposure commands
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -421,8 +310,15 @@ Response to ``getSensorLED`` has attribute ``led_setting``:
 
 """
 
+import microspec
 import doctest
-doctest.testmod(verbose=False, optionflags=doctest.ELLIPSIS | doctest.FAIL_FAST)
+FLAGS = doctest.ELLIPSIS | doctest.FAIL_FAST
+VERBOSE = False
+# Run doctests in each submodule: commands, replies, constants, helpers
+doctest.testmod(m=microspec.commands,  verbose=VERBOSE, optionflags=FLAGS)
+doctest.testmod(m=microspec.replies,   verbose=VERBOSE, optionflags=FLAGS)
+doctest.testmod(m=microspec.constants, verbose=VERBOSE, optionflags=FLAGS)
+doctest.testmod(m=microspec.helpers,   verbose=VERBOSE, optionflags=FLAGS)
 
 # import microspec
 # kit = microspec.Devkit()

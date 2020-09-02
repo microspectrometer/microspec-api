@@ -4,16 +4,14 @@
 Example
 -------
 
-.. code-block:: python
-
-   import microspec as usp
-   usp.GREEN
+>>> import microspec as usp
+>>> usp.GREEN
+1
 
 See the complete :ref:`list-of-constants`.
 
 View the :ref:`test_constants-source` for examples using
-constants. Also see the doctest examples in
-:ref:`test-constants`.
+constants.
 
 Use constants instead of hard-coded numbers
 -------------------------------------------
@@ -47,10 +45,10 @@ microspec ``OK`` equals microspeclib ``StatusOK``:
 >>> usp.OK == dtypes.StatusOK
 True
 
-See
+The tests in
 :class:`microspec.tests.test_constants.TestConsistent_with_microspeclib`
-for tests that the constants in the API are consistent with the
-JSON config file.
+checks if the constants in the API are consistent with the JSON
+config file.
 
 .. _list-of-constants:
 

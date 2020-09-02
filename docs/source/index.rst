@@ -10,7 +10,7 @@ Welcome to microspec's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   microspec
+   module_microspec
    microspeclib
    userdocs
    devdocs

@@ -82,3 +82,8 @@ class TestConsistent_with_microspeclib():
         assert usp.GAIN1X == dtypes.GainDefault
     def test_ALL_ROWS_equals_microspeclib_RowsDefault(self):
         assert usp.ALL_ROWS == dtypes.RowsDefault
+
+def test_MIN_CYCLES_is_1():
+    assert usp.MIN_CYCLES == 1
+def test_MAX_CYCLES_is_65500():
+    assert usp.MAX_CYCLES == 65500

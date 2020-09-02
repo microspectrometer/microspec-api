@@ -59,18 +59,6 @@ Example:
 
 See the full list of commands in :mod:`microspec.commands`.
 
-.. note::
-
-   The dev-kit commands are defined in the ``protocol.command``
-   object of the :ref:`JSON API config file <dev-kit-API-JSON>`.
-
-   - the **keys** are the **byte values** sent over serial to
-     represent the command
-   - the **values** are objects that **name the command** and
-     describe its **parameters** and **byte format**.
-   - **command names** are identical to the method names of
-     ``Devkit`` except that the first letter is capitalized.
-
 :mod:`microspec.constants`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
