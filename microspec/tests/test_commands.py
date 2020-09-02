@@ -70,7 +70,7 @@ class TestCommandSetBridgeLED():
         kit = devkit_connection
         invalid_led_setting = 3
         assert kit.setBridgeLED(invalid_led_setting).status == 'ERROR'
-    def test_Call_setBridgeLED(self, devkit_connection):
+    def test_Call_setBridgeLED_examples_and_cleanup(self, devkit_connection):
         kit = devkit_connection
         assert kit.setBridgeLED(usp.OFF).status == 'OK'
         assert kit.setBridgeLED(usp.GREEN).status == 'OK'
@@ -133,7 +133,7 @@ class TestCommandSetSensorLED():
         kit = devkit_connection
         with pytest.raises(TypeError):
             kit.setSensorLED(led_num=0)
-    def test_Call_setSensorLED(self, devkit_connection):
+    def test_Call_setSensorLED_examples_and_cleanup(self, devkit_connection):
         kit = devkit_connection
         state = usp.RED;
         lednum = 0
@@ -219,12 +219,12 @@ class TestCommandSetSensorConfig():
         kit = devkit_connection
         assert kit.setSensorConfig(row_bitmap=0x00).status == 'OK'
         assert kit.getSensorConfig().row_bitmap == 0x00
-    def test_Call_setSensorConfig(self, devkit_connection):
+    def test_Call_setSensorConfig_examples_and_cleanup(self, devkit_connection):
         kit = devkit_connection
         assert kit.setSensorConfig(
-                usp.BINNING_ON,
-                usp.GAIN1X,
-                usp.ALL_ROWS
+                usp.BINNING_OFF,
+                usp.GAIN5X,
+                row_bitmap=0x05
                 ).status == 'OK'
         # cleanup
         kit.setSensorConfig() # call with default values
@@ -232,3 +232,22 @@ class TestCommandSetSensorConfig():
         assert default_config.binning == 'BINNING_ON'
         assert default_config.gain == 'GAIN1X'
         assert default_config.row_bitmap == 'ALL_ROWS'
+
+class TestCommandGetExposure():
+    def test_getExposure(self, devkit_connection):
+        kit = devkit_connection
+        assert kit.getExposure().status == 'OK'
+
+class TestCommandSetExposure():
+    def test_setExposure_examples_and_cleanup(self, devkit_connection):
+        kit = devkit_connection
+        assert usp.to_ms(usp.MIN_CYCLES) == 0.02
+        assert usp.to_ms(usp.MAX_CYCLES) == 1310.0
+        assert kit.setExposure(ms=0.02).status == 'OK' # <--- min
+        assert kit.setExposure(ms=0.10).status == 'OK'
+        assert kit.setExposure(ms=1.00).status == 'OK'
+        assert kit.setExposure(ms=10.0).status == 'OK'
+        assert kit.setExposure(ms=100).status == 'OK'
+        assert kit.setExposure(ms=1310).status == 'OK' # <--- max
+        # cleanup
+        kit.setExposure(ms=1)

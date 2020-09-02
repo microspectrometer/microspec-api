@@ -111,26 +111,14 @@ indicates success/failure of auto-expose -- but it is more direct for
 application code to read the ``success`` attribute of the
 ``autoExposure`` response.
 
-Test spectrometer configuration commands
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Exposure time (integration time)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**setSensorConfig**
-
->>> kit.setSensorConfig(
-...     binning    = usp.BINNING_ON,
-...     gain       = usp.GAIN1X,
-...     row_bitmap = usp.ALL_ROWS
-...     )
-setSensorConfig_response(status='OK')
-
-Test exposure commands
-^^^^^^^^^^^^^^^^^^^^^^
+Exposure time (a.k.a, integration time) is measured in units
+of cycles in the dev-kit firmware. One cycle is 20µs (20.0e-6
+s).
 
 .. note::
-
-    Exposure time (a.k.a, integration time) is measured in units
-    of cycles in the dev-kit firmware. One cycle is 20µs (20.0e-6
-    s).
 
     Applications should not need to convert between units of
     seconds and cycles:

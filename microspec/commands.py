@@ -153,6 +153,45 @@ class Devkit(MicroSpecSimpleInterface):
             self,
             led_num : int
             ):
+        """Read the state of an indicator LED on the Sensor PCB.
+
+        There are two indicator LEDS: led0 and led1.
+
+        .. note::
+
+            Application code should never call this method:
+
+            - led0 is OFF while commands execute, so the state returned
+              by :func:`microspec.commands.Devkit.getSensorLED` is
+              always OFF
+            - led1 indicates the success of auto-expose, but this is
+              directly available from the ``success`` attribute of the
+              response to :func:`microspec.commands.Devkit.autoExposure`
+
+        Examples
+        --------
+
+        *Setup* -- set the LEDs to a known state:
+
+        >>> import microspec as usp
+        >>> kit = usp.Devkit()
+        >>> kit.setSensorLED(usp.GREEN, led_num=0)
+        setSensorLED_response(status='OK')
+        >>> kit.setSensorLED(usp.GREEN, led_num=1)
+        setSensorLED_response(status='OK')
+
+        Call ``getSensorLED``:
+
+        >>> kit.getSensorLED(0) # Expect OFF
+        getSensorLED_response(status='OK', led_setting='OFF')
+        >>> kit.getSensorLED(1) # Expect GREEN
+        getSensorLED_response(status='OK', led_setting='GREEN')
+
+        See Also
+        --------
+        setSensorLED
+        """
+
         _reply = super().getSensorLED(led_num)
         reply = replies.getSensorLED_response(
                 status = status_dict.get(_reply.status),
@@ -165,6 +204,61 @@ class Devkit(MicroSpecSimpleInterface):
             led_setting : int,
             led_num : int
             ):
+        """Set the LEDs on the Sensor PCB to OFF, GREEN, or RED.
+
+        There are two indicator LEDS:
+
+        - led0
+
+            - usually appears GREEN
+            - is OFF while a command is being executed
+            - only turns RED if there is a serious error in serial
+              communication (this should never happen)
+
+        - led1
+
+            - usually appears GREEN
+            - turns RED during auto-expose
+            - stays RED if auto-expose fails
+            - turns GREEN if auto-expose succeeds
+
+        .. note::
+
+            Application code should never call this method. The LEDs are
+            controlled by firmware to indicate status. Controlling the
+            LEDs from the application undermines the LEDs purpose as
+            status indicators.
+
+        Examples
+        --------
+
+        *Setup*:
+
+        >>> import microspec as usp
+        >>> kit = usp.Devkit()
+
+        Turn led0 and led1 OFF:
+
+        >>> kit.setSensorLED(usp.OFF, 0)
+        setSensorLED_response(status='OK')
+        >>> kit.setSensorLED(usp.OFF, 1)
+        setSensorLED_response(status='OK')
+
+        Turn led0 and led1 RED:
+
+        >>> kit.setSensorLED(usp.RED, 0)
+        setSensorLED_response(status='OK')
+        >>> kit.setSensorLED(usp.RED, 1)
+        setSensorLED_response(status='OK')
+
+        Turn led0 and led1 GREEN:
+
+        >>> kit.setSensorLED(usp.GREEN, 0)
+        setSensorLED_response(status='OK')
+        >>> kit.setSensorLED(usp.GREEN, 1)
+        setSensorLED_response(status='OK')
+
+        """
         _reply = super().setSensorLED(led_num, led_setting)
         reply = replies.setSensorLED_response(
                 status = status_dict.get(_reply.status)
@@ -172,6 +266,18 @@ class Devkit(MicroSpecSimpleInterface):
         return reply
 
     def getSensorConfig(self):
+        """One-liner
+
+        Examples
+        --------
+
+        *Setup*:
+
+        >>> import microspec as usp
+        >>> kit = usp.Devkit()
+
+
+        """
         _reply = super().getSensorConfig()
         reply = replies.getSensorConfig_response(
                 status     = status_dict.get(_reply.status),
@@ -191,6 +297,18 @@ class Devkit(MicroSpecSimpleInterface):
             gain : int = GAIN1X,
             row_bitmap : int = ALL_ROWS
             ):
+        """One-liner
+
+        Examples
+        --------
+
+        *Setup*:
+
+        >>> import microspec as usp
+        >>> kit = usp.Devkit()
+
+
+        """
         _reply = super().setSensorConfig(binning, gain, row_bitmap)
         reply = replies.setSensorConfig_response(
                 status_dict.get(_reply.status)
@@ -202,6 +320,18 @@ class Devkit(MicroSpecSimpleInterface):
             ms : float = None,  # specify time in milliseconds
             cycles : int = None # OR time in cycles
             ):
+        """One-liner
+
+        Examples
+        --------
+
+        *Setup*:
+
+        >>> import microspec as usp
+        >>> kit = usp.Devkit()
+
+
+        """
         # Exposure time units are either ms or cycles
         if ms == None and cycles == None:
             raise TypeError(
@@ -228,6 +358,18 @@ class Devkit(MicroSpecSimpleInterface):
         return reply
 
     def getExposure(self):
+        """One-liner
+
+        Examples
+        --------
+
+        *Setup*:
+
+        >>> import microspec as usp
+        >>> kit = usp.Devkit()
+
+
+        """
         _reply = super().getExposure()
         reply = replies.getExposure_response(
                 status = status_dict.get(_reply.status),
