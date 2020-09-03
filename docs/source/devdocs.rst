@@ -6,4 +6,3 @@ Developer Docs
    :caption: Contents:
 
    devdocs_microspec
-   devdocs_replies

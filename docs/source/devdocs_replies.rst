@@ -1,7 +1,7 @@
 .. _devdocs_replies:
 
-Developer docs for microspec.replies
-====================================
+microspec.replies
+=================
 
 Simple Command Responses
 ------------------------
