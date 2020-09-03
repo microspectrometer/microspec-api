@@ -73,14 +73,14 @@ _constants = dict(zip(_global_names, _global_values))
 
 # status
 OK = _constants['StatusOK']
-"""The dev-kit successfully executed the command.
+"""int: The dev-kit successfully executed the command.
 
 See Also
 --------
 ERROR
 """
 ERROR = _constants['StatusError']
-"""The dev-kit failed to execute the command.
+"""int: The dev-kit failed to execute the command.
 
 The usual cause is that the command was called with one or more
 invalid inputs. For example, ``42`` is invalid for ``led_num`` in
@@ -98,7 +98,7 @@ OK
 
 # led_setting
 GREEN = _constants['LEDGreen']
-"""LED is ON and GREEN.
+"""int: LED is ON and GREEN.
 
 See Also
 --------
@@ -106,7 +106,7 @@ OFF
 RED
 """
 RED = _constants['LEDRed']
-"""LED is ON and RED.
+"""int: LED is ON and RED.
 
 See Also
 --------
@@ -114,7 +114,7 @@ OFF
 GREEN
 """
 OFF = _constants['LEDOff']
-"""LED is OFF.
+"""int: LED is OFF.
 
 See Also
 --------
@@ -124,7 +124,7 @@ RED
 
 # binning
 BINNING_OFF = 0
-"""Pixels are not binned.
+"""int: Pixels are not binned.
 
 There are 784 pixels with 7.8µm pitch. The first 14 are optically
 black.
@@ -134,7 +134,7 @@ See Also
 BINNING_ON
 """
 BINNING_ON = 1
-"""Pixels are binned.
+"""int: Pixels are binned.
 
 There are 392 pixels with 15.6µm pitch. The first 7 are optically
 black. This is the recommended and default configuration.
@@ -146,31 +146,42 @@ BINNING_OFF
 
 # gain
 GAIN1X = _constants['Gain1x']
-"""Pixel analog voltage gain is 1x.
+"""int: Pixel analog voltage gain is 1x.
 
 This is the recommended and default configuration.
 """
 GAIN2_5X = _constants['Gain2_5x']
-"""Pixel analog voltage gain is 2.5x."""
+"""int: Pixel analog voltage gain is 2.5x."""
 GAIN4X = _constants['Gain4x']
-"""Pixel analog voltage gain is 4x."""
+"""int: Pixel analog voltage gain is 4x."""
 GAIN5X = _constants['Gain5x']
-"""Pixel analog voltage gain is 5x."""
+"""int: Pixel analog voltage gain is 5x."""
 
 # row_bitmap
 ALL_ROWS = _constants['RowsDefault']
-"""Use all five rows of pixels.
+"""int: Use all five rows of pixels.
 
 Pixel height is divided into five rows. Using all five rows, the
 pixels are 312.5µm tall. This is the recommended and default
 configuration.
+
+``row_bitmap=31`` means "all five rows" because 31 in binary is
+``0001 1111``:
+
+>>> 0b00011111
+31
+
+Similarly, ``row_bitmap=7`` means only use rows 1, 2, and 3:
+
+>>> 0b00000111
+7
 """
 
 # TODO: add to JSON config file
 MAX_CYCLES = 65500 # 1310 milliseconds
-""" """
+"""int: Longest exposure time (integration time)."""
 MIN_CYCLES = 1 # 0.02 milliseconds
-""" """
+"""int: Shortest exposure time (integration time)."""
 
 # Define user-friendly dicts to look up names from values in context.
 _status_constants   = [ OK,   ERROR ]

@@ -10,33 +10,6 @@ Example
 >>> import microspec
 >>> kit = microspec.Devkit()
 
-:class:`~microspec.commands.Devkit` inherits from
-:class:`microspeclib.simple.MicroSpecSimpleInterface` to
-customize its auto-generated methods. The customizations simplify
-application programming:
-
-- add default parameter values
-- format responses to use strings instead of numbers
-- add a timeout handler via a mix-in
-- add custom docstrings with examples
-
-Notes
------
-
-The dev-kit commands are defined in the ``protocol.command``
-**object** of the :ref:`JSON API config file <dev-kit-API-JSON>`.
-
-- the **keys** are the **byte values** sent over serial to
-  represent the command
-- the **values** are **objects** that:
-
-  - **name** the command
-  - describe the command **parameters**
-  - define the **byte format** of the complete message
-
-- **command names** are identical to the **method names** in
-  ``Devkit`` (except that the first letter is capitalized)
-
 """
 
 __all__ = ['Devkit']
@@ -57,18 +30,23 @@ class Devkit(MicroSpecSimpleInterface):
     Calling a ``Devkit`` method sends the **command**. The method's
     return value is the **response**.
 
-    Examples
-    --------
+    Example
+    -------
+
+    Command ``getBridgeLED`` returns ``getBridgeLED_response``:
 
     >>> import microspec
     >>> kit = microspec.Devkit()
     >>> kit.getBridgeLED()
     getBridgeLED_response(status='OK', led_setting='GREEN')
 
-    Assign the **response** to variable ``reply`` and access each
-    part of the response as an attribute:
+    Assign the **response** to variable ``reply``:
 
     >>> reply = kit.getBridgeLED()
+
+    Access each part of the response as attributes ``status`` and
+    ``led_setting``:
+
     >>> reply.status
     'OK'
     >>> reply.led_setting
@@ -330,6 +308,53 @@ class Devkit(MicroSpecSimpleInterface):
         >>> import microspec as usp
         >>> kit = usp.Devkit()
 
+        ``setExposure`` accepts time in units of ms:
+
+        >>> kit.setExposure(ms=5.0)
+        setExposure_response(status='OK')
+
+        ``setExposure`` accepts time in units of cycles:
+
+        >>> kit.setExposure(cycles=250)
+        setExposure_response(status='OK')
+
+        ``setExposure`` requires an exposure time input
+
+        >>> kit.setExposure()
+        Traceback (most recent call last):
+            ...
+        TypeError: setExposure() missing 1 required argument: 'ms' or 'cycles'
+
+        Calling ``setExposure`` with both ``ms`` and ``cycles`` is not
+        allowed:
+
+        >>> kit.setExposure(ms=5.0, cycles=250)
+        Traceback (most recent call last):
+            ...
+        TypeError: setExposure() got an unexpected keyword 'cycles' \
+        (requires 'ms' or 'cycles' but received both)
+
+        ``setExposure`` clamps time to the allowed range:
+
+        >>> # Test clamping exposure time to MAX
+        >>> usp.MAX_CYCLES
+        65500
+        >>> # Setup: set exposure time one cycle higher than the maximum
+        >>> kit.setExposure(cycles=usp.MAX_CYCLES+1)
+        setExposure_response(status='OK')
+        >>> # Test: expect the exposure time is 65500, not 65501
+        >>> kit.getExposure()
+        getExposure_response(status='OK', ms=1310.0, cycles=65500)
+
+        >>> # Test clamping exposure time to MIN
+        >>> usp.MIN_CYCLES
+        1
+        >>> # Setup: set exposure time one cycle lower than the minimum
+        >>> kit.setExposure(cycles=usp.MIN_CYCLES-1)
+        setExposure_response(status='OK')
+        >>> # Test: expect the exposure time is 1, not 0
+        >>> kit.getExposure()
+        getExposure_response(status='OK', ms=0.02, cycles=1)
 
         """
         # Exposure time units are either ms or cycles
@@ -368,7 +393,14 @@ class Devkit(MicroSpecSimpleInterface):
         >>> import microspec as usp
         >>> kit = usp.Devkit()
 
+        ``getExposure`` reports exposure time in both units:
 
+        >>> # Setup: set exposure time to 5ms
+        >>> kit.setExposure(ms=5)
+        setExposure_response(status='OK')
+        >>> # Test: expect 5.0ms and 250 cycles
+        >>> kit.getExposure()
+        getExposure_response(status='OK', ms=5.0, cycles=250)
         """
         _reply = super().getExposure()
         reply = replies.getExposure_response(
@@ -379,4 +411,47 @@ class Devkit(MicroSpecSimpleInterface):
         return reply
 
     def captureFrame(self):
+        """One-liner
+
+        Examples
+        --------
+
+        *Setup*:
+
+        >>> import microspec as usp
+        >>> kit = usp.Devkit()
+
+        Capture a frame:
+
+        >>> reply = kit.captureFrame()
+
+        The frame is stored as a Python ``list`` of numbers. Each number
+        is the signal strength at that pixel in units of *counts*.
+
+        The list starts with pixel 1. With pixel binning on, the frame
+        has 392 pixels, so the list ends with pixel 392:
+
+        >>> print(reply)
+        SensorCaptureFrame(status=0, num_pixels=392, pixels=[...])
+
+        The list ``pixels`` is hard to read on its own. Tag each pixel
+        with its pixel number. Turn the ``(pixnum,pixel)`` pairs into
+        a list of ``tuples`` with ``list(zip(pixnum,pixels))`` or, as
+        shown in this example, into a ``dict``:
+
+        >>> frame = dict(zip(range(1,reply.num_pixels+1), reply.pixels))
+        >>> print(frame)
+        {1: ..., 2: ..., ..., 391: ..., 392: ...}
+
+        This is still hard to read. Put each pixel on its own line:
+
+        >>> import pprint
+        >>> pprint.pprint(frame)
+        {1: ...,
+         2: ...,
+         ...
+         391: ...,
+         392: ...}
+
+        """
         return super().captureFrame()
