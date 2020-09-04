@@ -39,28 +39,32 @@ Response to ``getSensorLED`` has attribute ``led_setting``:
 
 import microspec
 import doctest
-def _print_all_tests(FLAGS):
+def _print_all_tests(submodules, FLAGS):
     """Run doctest examples in each submodule and print each test.
-
-    Maintain the list of submodules.
     """
-    doctest.testmod(m=microspec.commands,  verbose=True, optionflags=FLAGS)
-    doctest.testmod(m=microspec.replies,   verbose=True, optionflags=FLAGS)
-    doctest.testmod(m=microspec.constants, verbose=True, optionflags=FLAGS)
-    doctest.testmod(m=microspec.helpers,   verbose=True, optionflags=FLAGS)
-def _print_summary(FLAGS):
+    for submod in submodules:
+        doctest.testmod(m=getattr(microspec,submod), verbose=True, optionflags=FLAGS)
+    # doctest.testmod(m=microspec.commands,  verbose=True, optionflags=FLAGS)
+    # doctest.testmod(m=microspec.replies,   verbose=True, optionflags=FLAGS)
+    # doctest.testmod(m=microspec.constants, verbose=True, optionflags=FLAGS)
+    # doctest.testmod(m=microspec.helpers,   verbose=True, optionflags=FLAGS)
+def _print_summary(submodules, FLAGS):
     """Run doctest examples in each submodule and print a summary only.
-
-    Maintain the list of microspec submodules.
+    
+    Parameters
+    ----------
+    submodules : list
+        List the names of the submodules to doctest:
+        ['sub1', 'sub2', etc.]
+    FLAGS
+        Doctest flags.
     """
     print("Running doctest examples...\n")
     print(f"{'module'   :10}| doctest results")
     print(f"{'------'   :10}| ---------------")
-    print(f"{'commands' :10}| {doctest.testmod(m=microspec.commands,  optionflags=FLAGS)}")
-    print(f"{'replies'  :10}| {doctest.testmod(m=microspec.replies,   optionflags=FLAGS)}")
-    print(f"{'constants':10}| {doctest.testmod(m=microspec.constants, optionflags=FLAGS)}")
-    print(f"{'helpers'  :10}| {doctest.testmod(m=microspec.helpers,   optionflags=FLAGS)}")
-def run_doctest_examples(flags, verbose=False):
+    for submod in submodules:
+        print(f"{submod :10}| {doctest.testmod(m=getattr(microspec,submod),  optionflags=FLAGS)}")
+def run_doctest_examples(submodules: list, FLAGS, verbose=False):
     """Run the doctest examples in all the microspec submodules.
 
     With verbose=True, this behaves identical to calling
@@ -72,7 +76,11 @@ def run_doctest_examples(flags, verbose=False):
     This function modifies that behavior by collecting the test
     summaries and printing them in a table.
     """
-    if verbose: _print_all_tests(flags)
-    else: _print_summary(flags)
-FLAGS = doctest.ELLIPSIS | doctest.FAIL_FAST
-# run_doctest_examples(FLAGS, verbose=False)
+    if verbose: _print_all_tests(submodules, FLAGS)
+    else: _print_summary(submodules, FLAGS)
+run_doctest_examples(
+        submodules = ['commands', 'replies', 'constants', 'helpers'],
+        # submodules = ['commands'],
+        FLAGS = doctest.ELLIPSIS | doctest.FAIL_FAST | doctest.NORMALIZE_WHITESPACE,
+        verbose=False
+        )

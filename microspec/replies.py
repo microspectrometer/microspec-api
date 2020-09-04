@@ -166,3 +166,8 @@ getExposure_response = namedtuple(
         'getExposure_response',
         ['status', 'ms', 'cycles']
         )
+
+captureFrame_response = namedtuple(
+        'captureFrame_response',
+        ['status', 'num_pixels', 'pixels', 'frame']
+        )

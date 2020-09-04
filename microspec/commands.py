@@ -18,8 +18,16 @@ from microspeclib.simple import MicroSpecSimpleInterface
 from microspec.constants import *
 from microspec.helpers import *
 import microspec.replies as replies
+import warnings
 
-class Devkit(MicroSpecSimpleInterface):
+class TimeoutWarning():
+    def issue_timeout_warning(self, command_name: str, suggestion:str =""):
+        warnings.warn(
+            f"Command {command_name} timed out. {suggestion}",
+            stacklevel=2
+            )
+
+class Devkit(MicroSpecSimpleInterface, TimeoutWarning):
     """Interface for dev-kit communication.
 
     Every communication with the dev-kit consists of:
@@ -54,6 +62,32 @@ class Devkit(MicroSpecSimpleInterface):
 
     """
 
+    def __init__(self):
+        """Add attributes to Devkit.
+        
+        Attributes
+        ----------
+        exposure_time_cycles: int
+            Exposure time in cycles. Updated every time getExposure()
+            and setExposure() are called.
+        exposure_time_ms: ms
+            Exposure time in ms. Updated every time getExposure()
+            and setExposure() are called.
+        """
+        super().__init__()
+        # Sync exposure_time attrs with dev-kit state:
+        exposure_time = self.getExposure()
+        self.exposure_time_cycles = exposure_time.cycles
+        self.exposure_time_ms     = exposure_time.ms
+    def _is_out_of_time(self, reply):
+        """Return True if the command timed out.
+
+        This exists solely for testing purposes.
+        It creates a seam where the unit tests monkeypatch a timeout
+        condition to test the path that issues the UserWarning when a
+        command timeouts.
+        """
+        return True if reply == None else False
     def getBridgeLED(
             self,
             led_num: int = 0 # LED0 is the only Bridge LED
@@ -253,8 +287,14 @@ class Devkit(MicroSpecSimpleInterface):
 
         >>> import microspec as usp
         >>> kit = usp.Devkit()
+        >>> kit.setSensorConfig() # restore default config
+        setSensorConfig_response(status='OK')
 
+        Read the spectrometer's pixel configuration:
 
+        >>> kit.getSensorConfig()
+        getSensorConfig_response(status='OK', binning='BINNING_ON',
+                                 gain='GAIN1X', row_bitmap='ALL_ROWS')
         """
         _reply = super().getSensorConfig()
         reply = replies.getSensorConfig_response(
@@ -285,6 +325,21 @@ class Devkit(MicroSpecSimpleInterface):
         >>> import microspec as usp
         >>> kit = usp.Devkit()
 
+        Configure the spectrometer with pixel binning off:
+
+        >>> kit.setSensorConfig(binning=usp.BINNING_OFF)
+        setSensorConfig_response(status='OK')
+        >>> kit.getSensorConfig()
+        getSensorConfig_response(status='OK', binning='BINNING_OFF',
+                                 gain='GAIN1X', row_bitmap='ALL_ROWS')
+
+        Configure the spectrometer with the default pixel configuration:
+
+        >>> kit.setSensorConfig()
+        setSensorConfig_response(status='OK')
+        >>> kit.getSensorConfig()
+        getSensorConfig_response(status='OK', binning='BINNING_ON',
+                                 gain='GAIN1X', row_bitmap='ALL_ROWS')
 
         """
         _reply = super().setSensorConfig(binning, gain, row_bitmap)
@@ -331,7 +386,7 @@ class Devkit(MicroSpecSimpleInterface):
         >>> kit.setExposure(ms=5.0, cycles=250)
         Traceback (most recent call last):
             ...
-        TypeError: setExposure() got an unexpected keyword 'cycles' \
+        TypeError: setExposure() got an unexpected keyword 'cycles'
         (requires 'ms' or 'cycles' but received both)
 
         ``setExposure`` clamps time to the allowed range:
@@ -380,6 +435,10 @@ class Devkit(MicroSpecSimpleInterface):
         reply = replies.setExposure_response(
                 status_dict.get(_reply.status)
                 )
+        # Update Devkit exposure time attrs
+        if reply.status == 'OK':
+            self.exposure_time_cycles = time
+            self.exposure_time_ms = to_ms(time)
         return reply
 
     def getExposure(self):
@@ -408,10 +467,64 @@ class Devkit(MicroSpecSimpleInterface):
                 ms     = to_ms(_reply.cycles),
                 cycles = _reply.cycles
                 )
+        # Update Devkit exposure time attrs
+        if reply.status == 'OK':
+            self.exposure_time_cycles = reply.cycles
+            self.exposure_time_ms = reply.ms
         return reply
 
     def captureFrame(self):
         """One-liner
+
+        Return
+        ------
+        status : str
+            Serial communication status, either 'OK', 'ERROR', or
+            'TIMEOUT'.
+        num_pixels : int
+            The number of pixels in the frame (either 392 or 784
+            depending on pixel binning).
+        pixels : list
+            The 16-bit ADC counts at each pixel, starting with pixel 1
+            and ending with pixel 392 or 784 (depending on pixel
+            binning).
+        frame : dict
+            Python dictionary where the key is the pixel number and
+            the value is the 16-bit ADC counts at that pixel.
+
+        Dropped Frames
+        --------------
+        ``captureFrame`` guards against the case that the serial timeout
+        is less than the exposure time (otherwise such a scenario
+        guarantees a timeout).
+
+        Even with the timeout much longer than the exposure time, if an
+        application loops captureFrame for a long time (such as a data
+        logging application or a free-running plot), there will likely
+        be a timeout from the occasional USB hiccup.
+
+        ``captureFrame`` issues a ``UserWarning`` describing which
+        command caused the timeout. This is only a warning because it is
+        not a bug in the application code, just an unlucky event due to
+        the particular hardware that is communicating with the dev-kit.
+
+        The warnings print to the console and can safely be ignored.
+
+        If there are a lot of dropped frames, it might help to log the
+        warnings to identify a slow computer or a bad USB cable.
+
+        ``captureFrame`` also notes ``TIMEOUT`` in the status, and fills
+        the reply with obviously bad data: ``num_pixels=0`` and
+        ``pixels=[]``.
+
+        If the application is data logging, it might improve data
+        quality to check the ``status`` attribute for a TIMEOUT to note
+        a missing frame and skip logging the bad dataset.
+
+        Similarly, if the application is plotting, it might improve user
+        experience (and simplify the plotting code) to check the
+        ``status`` attribute for a TIMEOUT and replot the previous good
+        dataset rather than attempt to plot the bad dataset.
 
         Examples
         --------
@@ -432,7 +545,7 @@ class Devkit(MicroSpecSimpleInterface):
         has 392 pixels, so the list ends with pixel 392:
 
         >>> print(reply)
-        SensorCaptureFrame(status=0, num_pixels=392, pixels=[...])
+        captureFrame_response(status='OK', num_pixels=392, pixels=[...], frame={...})
 
         The list ``pixels`` is hard to read on its own. Tag each pixel
         with its pixel number. Turn the ``(pixnum,pixel)`` pairs into
@@ -454,4 +567,45 @@ class Devkit(MicroSpecSimpleInterface):
          392: ...}
 
         """
-        return super().captureFrame()
+        # ------------------------------------------------------------
+        # | Prevent application from setting timeout < exposure_time |
+        # ------------------------------------------------------------
+        # Save the user's timeout to restore later.
+        _timeout = self.timeout
+        # Adjust timeout if necessary.
+        if self.timeout*1000 < self.exposure_time_ms:
+            self.timeout = self.exposure_time_ms/1000 + 1 # exposure plus one second
+        # Now it is safe to capture a frame.
+        _reply = super().captureFrame()
+        # Restore the user's timeout.
+        self.timeout = _timeout
+
+        # -------------------------------------------------------
+        # | Handle the occasional timeout caused by USB hiccups |
+        # -------------------------------------------------------
+        # Inspect reply to captureFrame to determine if it timed out.
+        is_out_of_time = self._is_out_of_time(_reply)
+        # Issue a warning if there was a timeout.
+        if is_out_of_time: # Probably just a USB hiccup, not an application bug.
+            self.issue_timeout_warning(
+                "captureFrame",
+                suggestion="Retry captureFrame. "
+                "The timeout is probably just a USB hiccup."
+                )
+        # Fill the reply with bad data if there was a timeout.
+        reply = replies.captureFrame_response(
+                    status = 'TIMEOUT',
+                    num_pixels = 0,
+                    pixels = [],
+                    frame = {}
+            ) if is_out_of_time else replies.captureFrame_response(
+                    status = status_dict.get(_reply.status),
+                    num_pixels = _reply.num_pixels,
+                    pixels = _reply.pixels,
+                    # Format data into a "frame" dict where:
+                    #   - ADC counts is the value ─────────────────────────┐
+                    #   - pixel number is the key ──┐                      │
+                    #                      ┌── pixel number 1:N ──┐    ┌─ counts ─┐
+                    frame = dict(zip(range(1, _reply.num_pixels + 1), _reply.pixels))
+                )
+        return reply
