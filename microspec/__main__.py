@@ -1,39 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-.. _test-reply-attributes:
+"""``__main__.py`` -- Doctest runner.
 
-Test attributes of microspec.replies
-------------------------------------
+Run all doctests::
 
-All commands respond with the attribute ``status``:
-
->>> reply = kit.getBridgeLED()
->>> reply.status
-'OK'
->>> reply = kit.setBridgeLED(led_setting=usp.GREEN)
->>> reply.status
-'OK'
->>> reply = kit.getSensorLED(led_num=0)
->>> reply.status
-'OK'
->>> reply = kit.setSensorLED(led_num=0, led_setting=usp.GREEN)
->>> reply.status
-'OK'
->>> reply = kit.getExposure()
->>> reply.status
-'OK'
-
-Response to ``getBridgeLED`` has attribute ``led_setting``:
-
->>> reply = kit.getBridgeLED()
->>> reply.led_setting
-'GREEN'
-
-Response to ``getSensorLED`` has attribute ``led_setting``:
-
->>> reply = kit.getSensorLED(led_num=0)
->>> reply.led_setting
-'OFF'
+    python -m microspec
 
 """
 
@@ -79,8 +49,9 @@ def run_doctest_examples(submodules: list, FLAGS, verbose=False):
     if verbose: _print_all_tests(submodules, FLAGS)
     else: _print_summary(submodules, FLAGS)
 run_doctest_examples(
-        submodules = ['commands', 'replies', 'constants', 'helpers'],
+        # submodules = ['commands', 'replies', 'constants', 'helpers'],
         # submodules = ['commands'],
+        submodules = [],
         FLAGS = doctest.ELLIPSIS | doctest.FAIL_FAST | doctest.NORMALIZE_WHITESPACE,
         verbose=False
         )

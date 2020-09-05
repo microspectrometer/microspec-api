@@ -11,10 +11,17 @@ Connection to microspeclib
 customize its auto-generated methods. The customizations simplify
 application programming:
 
-- add default parameter values
-- format responses to use strings instead of numbers
-- add a timeout handler via a mix-in
-- add custom docstrings with examples
+- improve commands:
+    - provide default parameter values where it makes sense
+    - setExposure has option to specify time in milliseconds or
+      cycles
+    - recognize serial timeouts:
+        - add status value 'TIMEOUT'
+        - issue a warning when a timeout occurs
+- improve documentation:
+    - add custom docstrings with examples
+    - show type hints and default values in command function
+      signatures 
 
 The auto-generated methods of
 :class:`~microspeclib.simple.MicroSpecSimpleInterface` are generated

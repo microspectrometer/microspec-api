@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 """Send commands to the dev-kit.
 
-Class :class:`~microspec.commands.Devkit` **is the interface**
-for applications to communicate with the Chromation dev-kit.
-
 Example
 -------
 
@@ -21,11 +18,59 @@ import microspec.replies as replies
 import warnings
 
 class TimeoutWarning():
-    def issue_timeout_warning(self, command_name: str, suggestion:str =""):
+    def _issue_timeout_warning(self,
+            command_name: str,
+            suggestion:str =""
+            ):
         warnings.warn(
             f"Command {command_name} timed out. {suggestion}",
             stacklevel=2
             )
+    def _is_out_of_time(self, reply):
+        """Return True if the command timed out.
+
+        This exists solely for testing purposes.
+        It creates a seam where the unit tests monkeypatch a timeout
+        condition to test the path that issues the UserWarning when a
+        command timeouts.
+        """
+        return True if reply == None else False
+    def handle_hardware_timeout(self,
+            reply,
+            command_name: str,
+            suggestion:str = ""
+            ) -> bool:
+        """Return True and issue a warning if the command timed out.
+
+        Parameters
+        ----------
+        reply:
+            The return value of the
+            :class:`~microspeclib.simple.MicrospecSimpleInterface`
+            command, *not* the return value of the commands
+            defined in :class:`Devkit`.
+        command_name: str
+            The :class:`Devkit` method name, e.g., "captureFrame".
+        suggestion: str
+            A message to the user on how to troubleshoot the
+            timeout. If omitted or an empty string, a standard
+            suggestion is used.
+        """
+        is_out_of_time = self._is_out_of_time(reply)
+        if is_out_of_time:
+            if suggestion == "":
+                suggestion=(""
+                "Expect this is a rare hardware event. "
+                f"Retry {command_name} and increase the timeout "
+                "if the command timed out again. "
+                "If that does not help, "
+                "try a different USB cable or USB port, "
+                "or a different host computer."
+                )
+                self._issue_timeout_warning(command_name, suggestion)
+        return is_out_of_time
+
+
 
 class Devkit(MicroSpecSimpleInterface, TimeoutWarning):
     """Interface for dev-kit communication.
@@ -79,15 +124,6 @@ class Devkit(MicroSpecSimpleInterface, TimeoutWarning):
         exposure_time = self.getExposure()
         self.exposure_time_cycles = exposure_time.cycles
         self.exposure_time_ms     = exposure_time.ms
-    def _is_out_of_time(self, reply):
-        """Return True if the command timed out.
-
-        This exists solely for testing purposes.
-        It creates a seam where the unit tests monkeypatch a timeout
-        condition to test the path that issues the UserWarning when a
-        command timeouts.
-        """
-        return True if reply == None else False
     def getBridgeLED(
             self,
             led_num: int = 0 # LED0 is the only Bridge LED
@@ -297,7 +333,16 @@ class Devkit(MicroSpecSimpleInterface, TimeoutWarning):
                                  gain='GAIN1X', row_bitmap='ALL_ROWS')
         """
         _reply = super().getSensorConfig()
+        is_out_of_time = self.handle_hardware_timeout(
+                            _reply,
+                            command_name="getSensorConfig"
+                            )
         reply = replies.getSensorConfig_response(
+                status     = 'TIMEOUT',
+                binning    = '',
+                gain       = '',
+                row_bitmap = ''
+            ) if is_out_of_time else replies.getSensorConfig_response(
                 status     = status_dict.get(_reply.status),
                 binning    = binning_dict.get(_reply.binning),
                 gain       = gain_dict.get(_reply.gain),
@@ -432,7 +477,13 @@ class Devkit(MicroSpecSimpleInterface, TimeoutWarning):
         if time > MAX_CYCLES: time = MAX_CYCLES
 
         _reply = super().setExposure(time)
+        is_out_of_time = self.handle_hardware_timeout(
+                _reply,
+                command_name="setExposure"
+                )
         reply = replies.setExposure_response(
+                'TIMEOUT'
+            ) if is_out_of_time else replies.setExposure_response(
                 status_dict.get(_reply.status)
                 )
         # Update Devkit exposure time attrs
@@ -462,7 +513,15 @@ class Devkit(MicroSpecSimpleInterface, TimeoutWarning):
         getExposure_response(status='OK', ms=5.0, cycles=250)
         """
         _reply = super().getExposure()
+        is_out_of_time = self.handle_hardware_timeout(
+                            _reply,
+                            command_name="getExposure"
+                            )
         reply = replies.getExposure_response(
+                status = 'TIMEOUT',
+                ms     = 0,
+                cycles = 0
+            ) if is_out_of_time else replies.getExposure_response(
                 status = status_dict.get(_reply.status),
                 ms     = to_ms(_reply.cycles),
                 cycles = _reply.cycles
@@ -492,39 +551,50 @@ class Devkit(MicroSpecSimpleInterface, TimeoutWarning):
             Python dictionary where the key is the pixel number and
             the value is the 16-bit ADC counts at that pixel.
 
-        Dropped Frames
-        --------------
-        ``captureFrame`` guards against the case that the serial timeout
-        is less than the exposure time (otherwise such a scenario
-        guarantees a timeout).
+        Notes
+        -----
+        If there is a timeout, :func:`captureFrame` returns
+        ``status='TIMEOUT'``, and fills the reply with obviously
+        bad data:
 
-        Even with the timeout much longer than the exposure time, if an
-        application loops captureFrame for a long time (such as a data
-        logging application or a free-running plot), there will likely
-        be a timeout from the occasional USB hiccup.
+            - ``num_pixels=0``
+            - ``pixels=[]``
+            - ``frame={}``
 
-        ``captureFrame`` issues a ``UserWarning`` describing which
-        command caused the timeout. This is only a warning because it is
-        not a bug in the application code, just an unlucky event due to
-        the particular hardware that is communicating with the dev-kit.
+        In a data logging application, it might improve data
+        quality to check for ``status='TIMEOUT'`` to note a
+        missing frame and skip logging this bad dataset.
 
-        The warnings print to the console and can safely be ignored.
+        Similarly, in a GUI plotting application, it might
+        improve user experience (and simplify the plotting code)
+        to check for ``status='TIMEOUT'`` and replot the
+        *previous* (good) dataset rather than plot the bad
+        dataset.
 
-        If there are a lot of dropped frames, it might help to log the
-        warnings to identify a slow computer or a bad USB cable.
+        Applications are protected from accidentally setting a
+        :attr:`Devkit.timeout` that is shorter than the exposure
+        time (because this *guarantees* that :func:`captureFrame`
+        timeouts before a response is received). If the timeout
+        is less than the exposure time, :func:`captureFrame` uses
+        a :attr:`Devkit.timeout` that is one second longer than
+        the exposure time.
 
-        ``captureFrame`` also notes ``TIMEOUT`` in the status, and fills
-        the reply with obviously bad data: ``num_pixels=0`` and
-        ``pixels=[]``.
+        Even with :attr:`Devkit.timeout` one second longer than
+        the exposure time, if an application loops
+        :func:`captureFrame` for a long time (such as the data
+        logging and plotting GUI examples above), there will
+        likely be a timeout from the occasional hardware hiccup.
 
-        If the application is data logging, it might improve data
-        quality to check the ``status`` attribute for a TIMEOUT to note
-        a missing frame and skip logging the bad dataset.
+        In this case, :func:`captureFrame` issues a
+        ``UserWarning`` describing which command caused the
+        timeout. This is only a warning because the timeout is
+        hardware-dependent. It does **not** indicate a bug in the
+        application code.
 
-        Similarly, if the application is plotting, it might improve user
-        experience (and simplify the plotting code) to check the
-        ``status`` attribute for a TIMEOUT and replot the previous good
-        dataset rather than attempt to plot the bad dataset.
+        The timeout ``UserWarning`` prints to the console and can
+        safely be ignored. If the timeouts are a frequent event,
+        it indicates a problem with the host computer, its USB
+        port, or the USB cable.
 
         Examples
         --------
@@ -538,74 +608,97 @@ class Devkit(MicroSpecSimpleInterface, TimeoutWarning):
 
         >>> reply = kit.captureFrame()
 
-        The frame is stored as a Python ``list`` of numbers. Each number
-        is the signal strength at that pixel in units of *counts*.
+        The frame is stored as a Python ``list`` of numbers. Each
+        number is the signal strength at that pixel in units of
+        *counts*.
 
-        The list starts with pixel 1. With pixel binning on, the frame
-        has 392 pixels, so the list ends with pixel 392:
+        The list starts with pixel 1. With pixel binning on, the
+        frame has 392 pixels, so the list ends with pixel 392:
 
         >>> print(reply)
-        captureFrame_response(status='OK', num_pixels=392, pixels=[...], frame={...})
+        captureFrame_response(status='OK', num_pixels=392,
+                              pixels=[...], frame={...})
 
-        The list ``pixels`` is hard to read on its own. Tag each pixel
-        with its pixel number. Turn the ``(pixnum,pixel)`` pairs into
-        a list of ``tuples`` with ``list(zip(pixnum,pixels))`` or, as
-        shown in this example, into a ``dict``:
+        The list ``pixels`` is hard to read on its own (index 0
+        is pixel 1, index 1 is pixel 2, etc.):
 
-        >>> frame = dict(zip(range(1,reply.num_pixels+1), reply.pixels))
-        >>> print(frame)
+        >>> print(reply.pixels)
+        [..., ..., ...]
+
+        It is usually more convenient for applications to use the
+        dict ``frame`` because it tags each pixel with its pixel
+        number:
+
+        >>> print(reply.frame)
         {1: ..., 2: ..., ..., 391: ..., 392: ...}
 
-        This is still hard to read. Put each pixel on its own line:
+        This is still hard to read in the REPL. Put each pixel on
+        its own line:
 
         >>> import pprint
-        >>> pprint.pprint(frame)
+        >>> pprint.pprint(reply.frame)
         {1: ...,
          2: ...,
          ...
          391: ...,
          392: ...}
 
+        Alternatively, turn the ``(pixel number, pixel value)``
+        pairs into a list of ``tuples``:
+
+        >>> frame = list(zip(range(1,reply.num_pixels+1), reply.pixels))
+        >>> pprint.pprint(frame)
+        [(1, ...),
+         (2, ...),
+         ...,
+         (391, ...),
+         (392,...)]
+
         """
-        # ------------------------------------------------------------
-        # | Prevent application from setting timeout < exposure_time |
-        # ------------------------------------------------------------
+        # -----------------------------------
+        # | Prevent timeout < exposure_time |
+        # -----------------------------------
         # Save the user's timeout to restore later.
         _timeout = self.timeout
         # Adjust timeout if necessary.
         if self.timeout*1000 < self.exposure_time_ms:
-            self.timeout = self.exposure_time_ms/1000 + 1 # exposure plus one second
+            # Set timeout one second longer than exposure time.
+            self.timeout = self.exposure_time_ms/1000 + 1
         # Now it is safe to capture a frame.
         _reply = super().captureFrame()
         # Restore the user's timeout.
         self.timeout = _timeout
 
-        # -------------------------------------------------------
-        # | Handle the occasional timeout caused by USB hiccups |
-        # -------------------------------------------------------
-        # Inspect reply to captureFrame to determine if it timed out.
-        is_out_of_time = self._is_out_of_time(_reply)
-        # Issue a warning if there was a timeout.
-        if is_out_of_time: # Probably just a USB hiccup, not an application bug.
-            self.issue_timeout_warning(
-                "captureFrame",
-                suggestion="Retry captureFrame. "
-                "The timeout is probably just a USB hiccup."
+        is_out_of_time = self.handle_hardware_timeout(
+                _reply,
+                command_name="captureFrame",
                 )
-        # Fill the reply with bad data if there was a timeout.
+
+        # Create the reply. Use bad data if there was a timeout.
         reply = replies.captureFrame_response(
                     status = 'TIMEOUT',
                     num_pixels = 0,
                     pixels = [],
                     frame = {}
-            ) if is_out_of_time else replies.captureFrame_response(
+                ) if is_out_of_time else replies.captureFrame_response(
                     status = status_dict.get(_reply.status),
                     num_pixels = _reply.num_pixels,
                     pixels = _reply.pixels,
                     # Format data into a "frame" dict where:
-                    #   - ADC counts is the value ─────────────────────────┐
-                    #   - pixel number is the key ──┐                      │
-                    #                      ┌── pixel number 1:N ──┐    ┌─ counts ─┐
-                    frame = dict(zip(range(1, _reply.num_pixels + 1), _reply.pixels))
+                    # - pixel number is the key
+                    # - pixel ADC counts is the value
+                    frame = dict(zip(
+                        range(1,_reply.num_pixels+1), # <- pixel number 1:N
+                        _reply.pixels) # <---------------- counts
+                        )
                 )
         return reply
+
+    # def autoExposure(self):
+    #     _reply = super().autoExposure()
+    #     reply = replies.captureFrame_response(
+    #             status = 'TIMEOUT',
+    #             ) if is_out_of_time else replies.captureFrame_response(
+    #                     status = status_dict.get(_reply.status),
+    #                     )
+    #     return reply

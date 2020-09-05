@@ -1,7 +1,7 @@
 .. _API-constants:
 
-Dev-kit constants
-=================
+Constants
+=========
 
 .. automodule:: microspec.constants
    :members:

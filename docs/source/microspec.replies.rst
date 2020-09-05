@@ -1,7 +1,7 @@
 .. _API-responses:
 
-Dev-kit responses
-=================
+Responses
+=========
 
 .. automodule:: microspec.replies
 

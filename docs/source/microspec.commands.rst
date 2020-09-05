@@ -1,7 +1,7 @@
 .. _API-commands:
 
-Dev-kit commands
-================
+Commands
+========
 
 .. automodule:: microspec.commands
    :members:

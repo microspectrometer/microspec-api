@@ -1,4 +1,4 @@
-Package microspeclib placeholder
+Module microspeclib placeholder
 ================================
 
 .. toctree::

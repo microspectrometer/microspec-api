@@ -1,5 +1,7 @@
 """Module ``microspec`` is the API for the Chromation Spectrometer dev-kit.
 
+See the :ref:`API` reference docs.
+
 Install
 -------
 
@@ -8,6 +10,11 @@ Install the ``microspec`` project:
 .. code-block:: bash
 
     pip install microspec
+
+This installs the ``microspec`` package and a few command line
+utilities. The ``microspec`` package has submodules ``microspec``
+and ``microspeclib``. Applications should use the ``microspec``
+module.
 
 Usage
 -----
@@ -19,9 +26,8 @@ Use the ``microspec`` module in an application:
     import microspec
     kit = microspec.Devkit()
 
-If the application uses ``microspec`` beyond the initial ``kit =
-microspec.Devkit()``, Chromation recommends importing
-``microspec`` *bound* as ``usp``:
+Chromation recommends importing ``microspec`` *bound* as ``usp``
+to reduce code line length:
 
 .. code-block:: python
 

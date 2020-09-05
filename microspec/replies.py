@@ -1,14 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Format command responses for use in applications."""
-# __all__ = [
-#     'getBridgeLED_response',
-#     'setBridgeLED_response',
-#     'getSensorLED_response',
-#     'setSensorLED_response',
-#     'getSensorLED_response',
-#     'setSensorConfig_response',
-#     'setExposure_response',
-#     ]
+"""Define classes of command responses.
+
+Application code should **not** instantiate classes defined in
+this module. Command responses are generated internally by module
+:mod:`~microspec.commands`.
+"""
 
 from collections import namedtuple
 
@@ -20,10 +16,34 @@ _status = """\
 status : str
 
     Serial communication status is either
-    :data:`~microspec.constants.OK`
-    or :data:`~microspec.constants.ERROR`.
-    If ``status`` is ``'ERROR'`` the other attributes are not
-    valid.
+    :data:`~microspec.constants.OK`, 
+    :data:`~microspec.constants.ERROR`, or
+    :data:`~microspec.constants.TIMEOUT`.
+
+    Applications usually do not need to check ``status`` because
+    the :mod:`~microspec.commands` check ``status`` internally
+    and either issue a warning or raise an exception if
+    ``status`` is not :data:`~microspec.constants.OK`.
+
+    Applications *should* check ``status`` for the specific
+    use-cases documented in the :mod:`~microspec.commands`.
+
+    :data:`~microspec.constants.OK`:
+
+        Usually ``status`` is ``'OK'``.
+
+    :data:`~microspec.constants.ERROR`:
+
+        ``'ERROR'`` indicates a serial communication error, so
+        the other response attributes are not valid.
+
+    :data:`~microspec.constants.TIMEOUT`:
+
+        ``'TIMEOUT'`` means the command timed out before a
+        response was received from the dev-kit, so the other
+        response attributes are not valid. The timeout is set by
+        :class:`~microspec.commands.Devkit` attribute
+        ``timeout``.
 """
 
 _led_setting = """\

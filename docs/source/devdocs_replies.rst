@@ -3,6 +3,18 @@
 microspec.replies
 =================
 
+Connection to microspeclib
+--------------------------
+
+Commands receive a low-level response, then instantiate a
+high-level response using the classes defined in
+:mod:`~microspec.replies`.
+
+The command populates the high-level response with the attributes
+of the low-level response. This is the seam where integer codes
+are replaced with strings and additional attributes are provided
+as conveniences to applications.
+
 Simple Command Responses
 ------------------------
 
@@ -19,12 +31,15 @@ Module :mod:`~microspec.replies` defines *high-level* versions of
 each command response. This creates a seam to:
 
 - hide the serial communication attributes from the application
-- replace integer values with strings which:
+- add attributes as conveniences for applications:
 
-    - are human-readable
-    - match the names of the constants defined in
-      :mod:`~microspec.constants`
+    - getExposure returns with attributes for milliseconds and
+      cycles
+    - captureFrame returns with a dict attribute that
+      packages the pixel data with its pixel number
 
+- replace integer values with strings matching the names of the
+  constants defined in :mod:`~microspec.constants`
 - add a ``__repr__`` to eliminate the need to wrap responses in a
   ``print()`` when working at the REPL
 

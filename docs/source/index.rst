@@ -11,8 +11,10 @@ Welcome to microspec's documentation!
    :caption: Contents:
 
    module_microspec
+   dev-kit
+   dev-kit-api
+   tests
    microspeclib
-   userdocs
    devdocs
 
 Indices and tables
