@@ -6,14 +6,12 @@ class TestValues_of_status():
         assert usp.OK == 0
     def test_ERROR_is_1(self):
         assert usp.ERROR == 1
-    def test_TIMEOUT_is_2(self):
-        assert usp.TIMEOUT == 2
+    def test_TIMEOUT_is_not_in_status_dict(self):
+        assert list(usp.status_dict.values()).count('TIMEOUT')==0
     def test_0_maps_to_str_OK(self):
         assert usp.status_dict.get(usp.OK) == 'OK'
     def test_1_maps_to_str_ERROR(self):
         assert usp.status_dict.get(usp.ERROR) == 'ERROR'
-    def test_2_maps_to_str_TIMEOUT(self):
-        assert usp.status_dict.get(usp.TIMEOUT) == 'TIMEOUT'
 
 class TestValues_of_led_setting():
     def test_OFF_is_0(self):

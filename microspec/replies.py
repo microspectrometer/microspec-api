@@ -191,3 +191,25 @@ captureFrame_response = namedtuple(
         'captureFrame_response',
         ['status', 'num_pixels', 'pixels', 'frame']
         )
+
+autoExposure_response = namedtuple(
+        'autoExposure_response',
+        ['status', 'success', 'iterations']
+        )
+
+getAutoExposeConfig_response = namedtuple(
+        'getAutoExposeConfig_response',
+        [
+            'status',
+            'max_tries',
+            'start_pixel',
+            'stop_pixel',
+            'target',
+            'target_tolerance',
+            'max_exposure'
+         ])
+
+setAutoExposeConfig_response = namedtuple(
+        'setAutoExposeConfig_response',
+        ['status']
+        )

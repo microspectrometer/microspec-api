@@ -1,7 +1,9 @@
 import microspec as usp
 import pytest
-import warnings
-import re
+import warnings # https://docs.python.org/3/library/warnings.html
+import re # https://docs.python.org/3/library/re.html
+# See: https://docs.python.org/3/howto/regex.html#regex-howto
+import microspeclib
 
 # -----------------
 # | TEST FIXTURES |
@@ -176,6 +178,10 @@ class TestCommandGetBridgeLED(Setup):
     def test_getBridgeLED_Returns_ERROR_if_param_led_num_is_invalid(self, kit):
         invalid_led_num = 1
         assert kit.getBridgeLED(invalid_led_num).status == 'ERROR'
+    def test_getBridgeLED_Raises_TypeError_if_param_led_num_is_negative(self, kit):
+        neg_led_num = -1
+        with pytest.raises(TypeError):
+            kit.getBridgeLED(neg_led_num)
 
 class TestCommandSetBridgeLED(Setup):
     def test_setBridgeLED_Returns_status_OK_after_power_on(self, kit):
@@ -197,6 +203,14 @@ class TestCommandSetBridgeLED(Setup):
     def test_setBridgeLED_Returns_ERROR_if_param_led_setting_is_invalid(self, kit):
         invalid_led_setting = 3
         assert kit.setBridgeLED(invalid_led_setting).status == 'ERROR'
+    def test_setBridgeLED_Raises_TypeError_if_param_led_num_is_negative(self, kit):
+        neg_led_num = -1
+        with pytest.raises(TypeError):
+            kit.setBridgeLED(usp.GREEN, neg_led_num)
+    def test_setBridgeLED_Raises_TypeError_if_param_led_setting_is_negative(self, kit):
+        neg_led_setting = -1
+        with pytest.raises(TypeError):
+            kit.setBridgeLED(neg_led_setting, 0)
     def test_See_these_examples_for_setBridgeLED(self, kit):
         assert kit.setBridgeLED(usp.OFF).status == 'OK'
         assert kit.setBridgeLED(usp.GREEN).status == 'OK'
@@ -218,6 +232,9 @@ class TestCommandGetSensorLED(Setup):
     def test_getSensorLED_Returns_ERROR_if_led_num_is_invalid(self, kit):
         invalid_led_num = 2
         assert kit.getSensorLED(led_num=2).status == 'ERROR'
+    def test_getSensorLED_Raises_TypeError_if_param_led_num_is_negative(self, kit):
+        with pytest.raises(TypeError):
+            kit.getSensorLED(-1)
     def test_getSensorLED_Raises_TypeError_if_param_led_num_is_missing(self, kit):
         with pytest.raises(TypeError):
             kit.getSensorLED()
@@ -248,12 +265,24 @@ class TestCommandSetSensorLED(Setup):
     def test_Call_setSensorLED_specifying_params_by_keyword(self, kit):
         assert kit.setSensorLED(led_setting=usp.RED, led_num=0).status == 'OK'
         assert kit.setSensorLED(led_setting=usp.RED, led_num=1).status == 'OK'
+    def test_setSensorLED_Returns_ERROR_if_param_led_num_is_invalid(self, kit):
+        invalid_led_num = 2
+        assert kit.setSensorLED(usp.GREEN, invalid_led_num).status == 'ERROR'
+    def test_setSensorLED_Returns_ERROR_if_param_led_setting_is_invalid(self, kit):
+        invalid_led_setting = 3
+        assert kit.setSensorLED(invalid_led_setting, 0).status == 'ERROR'
     def test_setSensorLED_Raises_TypeError_if_param_led_num_is_missing(self, kit):
         with pytest.raises(TypeError):
             kit.setSensorLED(led_setting=usp.GREEN)
     def test_setSensorLED_Raises_TypeError_if_param_led_setting_is_missing(self, kit):
         with pytest.raises(TypeError):
             kit.setSensorLED(led_num=0)
+    def test_setSensorLED_Raises_TypeError_if_param_led_num_is_negative(self, kit):
+        with pytest.raises(TypeError):
+            kit.setSensorLED(usp.GREEN, -1)
+    def test_setSensorLED_Raises_TypeError_if_param_led_setting_is_negative(self, kit):
+        with pytest.raises(TypeError):
+            kit.setSensorLED(-1, 0)
     def test_See_these_examples_for_setSensorLED(self, kit):
         lednum = 0
         assert kit.setSensorLED(usp.OFF, lednum).status == 'OK'
@@ -291,28 +320,28 @@ class TestCommandGetSensorConfig(Setup):
             self, kit, monkeypatch
             ):
         with monkeypatch.context() as m:
-            m.setattr(kit, "_is_out_of_time", lambda reply : "True")
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
             with pytest.warns(UserWarning, match="Command getSensorConfig timed out."):
                 kit.getSensorConfig()
     def test_getSensorConfig_Returns_binning_as_empty_str_if_command_timeouts(
             self, kit, monkeypatch
             ):
         with monkeypatch.context() as m:
-            m.setattr(kit, "_is_out_of_time", lambda reply : "True")
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
             with pytest.warns(UserWarning):
                 assert kit.getSensorConfig().binning == ''
     def test_getSensorConfig_Returns_gain_as_empty_str_if_command_timeouts(
             self, kit, monkeypatch
             ):
         with monkeypatch.context() as m:
-            m.setattr(kit, "_is_out_of_time", lambda reply : "True")
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
             with pytest.warns(UserWarning):
                 assert kit.getSensorConfig().gain == ''
     def test_getSensorConfig_Returns_row_bitmap_as_empty_str_if_command_timeouts(
             self, kit, monkeypatch
             ):
         with monkeypatch.context() as m:
-            m.setattr(kit, "_is_out_of_time", lambda reply : "True")
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
             with pytest.warns(UserWarning):
                 assert kit.getSensorConfig().row_bitmap == ''
 
@@ -332,8 +361,14 @@ class TestCommandSetSensorConfig(Setup):
         # row_bitmap is invalid if three most-significant bits are set
         assert kit.setSensorConfig(row_bitmap=0xE0).status == 'ERROR'
         assert kit.setSensorConfig(row_bitmap=0xFF).status == 'ERROR'
+    def test_setSensorConfig_Raises_TypeError_if_any_param_is_negative(self, kit):
+        with pytest.raises(TypeError):
+            kit.setSensorConfig(binning=-1)
+            kit.setSensorConfig(gain=-1)
+            kit.setSensorConfig(row_bitmap=-1)
     def test_setSensorConfig_Returns_OK_if_param_row_bitmap_is_0x00_ie_all_rows_off(self, kit):
         # Demonstrate it's OK to turn off all rows.
+        # I can't think of any reason why anyone would want all rows off.
         assert kit.setSensorConfig(row_bitmap=0x00).status == 'OK'
         assert kit.getSensorConfig().row_bitmap == 0x00
     def test_See_this_example_for_setSensorConfig(self, kit):
@@ -366,28 +401,28 @@ class TestCommandGetExposure(Setup):
             self, kit, monkeypatch
             ):
         with monkeypatch.context() as m:
-            m.setattr(kit, "_is_out_of_time", lambda reply : "True")
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
             with pytest.warns(UserWarning, match="Command getExposure timed out."):
                 kit.getExposure()
     def test_getExposure_Returns_status_TIMEOUT_if_command_timeouts(
             self, kit, monkeypatch
             ):
         with monkeypatch.context() as m:
-            m.setattr(kit, "_is_out_of_time", lambda reply : "True")
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
             with pytest.warns(UserWarning):
                 assert kit.getExposure().status == 'TIMEOUT'
     def test_getExposure_Returns_exposure_time_0_ms_if_command_timeouts(
             self, kit, monkeypatch
             ):
         with monkeypatch.context() as m:
-            m.setattr(kit, "_is_out_of_time", lambda reply : "True")
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
             with pytest.warns(UserWarning):
                 assert kit.getExposure().ms == 0
     def test_getExposure_Returns_exposure_time_0_cycles_if_command_timeouts(
             self, kit, monkeypatch
             ):
         with monkeypatch.context() as m:
-            m.setattr(kit, "_is_out_of_time", lambda reply : "True")
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
             with pytest.warns(UserWarning):
                 assert kit.getExposure().cycles == 0
 
@@ -401,12 +436,24 @@ class TestCommandSetExposure(Setup):
         assert kit.setExposure(ms=5).status == 'OK'
     def test_Call_setExposure_specifying_exposure_time_in_units_of_cycles(self, kit):
         assert kit.setExposure(cycles=5).status == 'OK'
-    def test_setExposure_raises_TypeError_if_missing_a_time_param(self, kit):
+    def test_setExposure_Raises_TypeError_if_missing_a_time_param(self, kit):
         with pytest.raises(TypeError):
             kit.setExposure()
-    def test_setExposure_raises_TypeError_if_there_is_more_than_one_time_param(self, kit):
+    def test_setExposure_Raises_TypeError_if_there_is_more_than_one_time_param(self, kit):
         with pytest.raises(TypeError):
             kit.setExposure(ms=5, cycles=250)
+    def test_setExposure_Clamps_exposure_time_to_the_valid_range(self, kit):
+        negative_time = -1
+        assert kit.setExposure(cycles=negative_time).status == 'OK'
+        assert kit.getExposure().cycles == usp.MIN_CYCLES
+        assert kit.setExposure(ms=negative_time).status == 'OK'
+        assert kit.getExposure().ms == usp.to_ms(usp.MIN_CYCLES)
+        too_many_cycles = 65536 # > 65500
+        assert kit.setExposure(cycles=too_many_cycles).status == 'OK'
+        assert kit.getExposure().cycles == usp.MAX_CYCLES
+        too_many_ms = 1400 # > 1310
+        assert kit.setExposure(ms=too_many_ms).status == 'OK'
+        assert kit.getExposure().ms == usp.to_ms(usp.MAX_CYCLES)
     def test_See_these_examples_for_setExposure(self, kit):
         assert usp.to_ms(usp.MIN_CYCLES) == 0.02
         assert usp.to_ms(usp.MAX_CYCLES) == 1310.0
@@ -420,27 +467,28 @@ class TestCommandSetExposure(Setup):
             self, kit, monkeypatch
             ):
         with monkeypatch.context() as m:
-            m.setattr(kit, "_is_out_of_time", lambda reply : "True")
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
             with pytest.warns(UserWarning, match="Command setExposure timed out."):
                 kit.setExposure(ms=1)
     def test_setExposure_Returns_status_TIMEOUT_if_command_timeouts(
             self, kit, monkeypatch
             ):
         with monkeypatch.context() as m:
-            m.setattr(kit, "_is_out_of_time", lambda reply : "True")
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
             with pytest.warns(UserWarning):
                 assert kit.setExposure(ms=1).status == 'TIMEOUT'
 
 class TestCommandCaptureFrame(Setup):
-    def test_Call_captureFrame(self, kit):
+    def test_captureFrame_Returns_a_reply_with_a_readable_repr(self, kit):
         pattern = re.compile(""
                     r"captureFrame_response\("
                             "status='OK', "
                             "num_pixels=392, "
                            # pixels is a list of 392 ints
-                           r"pixels=\[(\d+, ){391,391}\d+\], "
+                           r"pixels=\[(\d+, ){391}\d+\], "
                            # frame is a dict of 392 int:int pairs
-                           r"frame={(\d+: \d+, ){391,391}\d+: \d+}"
+                           r"frame={(\d+: \d+, ){391}\d+: \d+}"
+                           r"\)"
                     )
         assert pattern.match(repr(
                 kit.captureFrame()
@@ -473,38 +521,222 @@ class TestCommandCaptureFrame(Setup):
             self, kit, monkeypatch
             ):
         with monkeypatch.context() as m:
-            m.setattr(kit, "_is_out_of_time", lambda reply : "True")
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
             with pytest.warns(UserWarning, match="Command captureFrame timed out."):
                 kit.captureFrame()
     def test_captureFrame_Returns_status_TIMEOUT_if_command_timeouts(
             self, kit, monkeypatch
             ):
         with monkeypatch.context() as m:
-            m.setattr(kit, "_is_out_of_time", lambda reply : "True")
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
             with pytest.warns(UserWarning):
                 assert kit.captureFrame().status == 'TIMEOUT'
     def test_captureFrame_Returns_num_pixels_is_0_if_command_timeouts(
             self, kit, monkeypatch
             ):
         with monkeypatch.context() as m:
-            m.setattr(kit, "_is_out_of_time", lambda reply : "True")
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
             with pytest.warns(UserWarning):
                 assert kit.captureFrame().num_pixels == 0
     def test_captureFrame_Returns_empty_list_for_pixels_if_command_timeouts(
             self, kit, monkeypatch
             ):
         with monkeypatch.context() as m:
-            m.setattr(kit, "_is_out_of_time", lambda reply : "True")
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
             with pytest.warns(UserWarning):
                 assert kit.captureFrame().pixels == []
     def test_captureFrame_Returns_empty_dict_for_frame_if_command_timeouts(
             self, kit, monkeypatch
             ):
         with monkeypatch.context() as m:
-            m.setattr(kit, "_is_out_of_time", lambda reply : "True")
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
             with pytest.warns(UserWarning):
                 assert kit.captureFrame().frame == {}
 
 class TestCommandAutoExposure(Setup):
-    def test_Call_autoExposure(self, kit):
-        assert kit.autoExposure() == "autoExposure_response(status='OK')"
+    def test_autoExposure_Returns_a_reply_with_a_readable_repr(self, kit):
+        pattern = re.compile(""
+                    r"autoExposure_response\("
+                            "status='OK', "
+                            "success=(('HIT_TARGET')|('GAVE_UP')), "
+                            r"iterations=\d+"
+                            r"\)"
+                    )
+        assert pattern.match(repr(
+                kit.autoExposure()
+                ))
+    def test_autoExposure_Returns_status_OK(self, kit):
+        assert kit.autoExposure().status == 'OK'
+    def test_autoExposure_Returns_success_str_HIT_TARGET_or_str_GAVE_UP(self, kit):
+        success = kit.autoExposure().success
+        assert success == 'HIT_TARGET' or success == 'GAVE_UP'
+    def test_autoExposure_Returns_iterations_int_between_1_and_max_tries(self, kit):
+        max_tries = kit.getAutoExposeConfig().max_tries
+        iterations = kit.autoExposure().iterations
+        assert 1 <= iterations <= max_tries
+    def test_autoExposure_Issues_timeout_warning_if_command_timeouts(
+            self, kit, monkeypatch
+            ):
+        with monkeypatch.context() as m:
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
+            with pytest.warns(UserWarning, match="Command autoExposure timed out."):
+                kit.autoExposure()
+    def test_autoExposure_Returns_status_TIMEOUT_if_command_timeouts(
+            self, kit, monkeypatch
+            ):
+        with monkeypatch.context() as m:
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
+            with pytest.warns(UserWarning):
+                assert kit.autoExposure().status == 'TIMEOUT'
+    def test_autoExposure_Returns_success_as_empty_str_if_command_timeouts(
+            self, kit, monkeypatch
+            ):
+        with monkeypatch.context() as m:
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
+            with pytest.warns(UserWarning):
+                assert kit.autoExposure().success == ''
+    def test_autoExposure_Returns_iterations_0_if_command_timeouts(
+            self, kit, monkeypatch
+            ):
+        with monkeypatch.context() as m:
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
+            with pytest.warns(UserWarning):
+                assert kit.autoExposure().iterations == 0
+
+class TestCommandGetAutoExposeConfig(Setup):
+    def test_getAutoExposeConfig_Returns_a_reply_with_a_readable_repr(self, kit):
+        pattern = re.compile(""
+                    # r"SensorGetAutoExposeConfig\("
+                    r"getAutoExposeConfig_response\("
+                            "status='OK', "
+                            r"max_tries=\d+, "
+                            r"start_pixel=\d+, "
+                            r"stop_pixel=\d+, "
+                            r"target=\d+, "
+                            r"target_tolerance=\d+, "
+                            r"max_exposure=\d+"
+                            r"\)"
+                    )
+        assert pattern.match(repr(
+                kit.getAutoExposeConfig()
+                ))
+    def test_getAutoExposeConfig_Returns_status_OK(self, kit):
+        assert kit.getAutoExposeConfig().status == 'OK'
+    def test_getAutoExposeConfig_Returns_MicroSpecInteger_max_tries(self, kit):
+        assert type(kit.getAutoExposeConfig().max_tries) == microspeclib.internal.util.MicroSpecInteger
+    def test_getAutoExposeConfig_Returns_MicroSpecInteger_start_pixel(self, kit):
+        assert type(kit.getAutoExposeConfig().start_pixel) == microspeclib.internal.util.MicroSpecInteger
+    def test_getAutoExposeConfig_Returns_MicroSpecInteger_stop_pixel(self, kit):
+        assert type(kit.getAutoExposeConfig().stop_pixel) == microspeclib.internal.util.MicroSpecInteger
+    def test_getAutoExposeConfig_Returns_MicroSpecInteger_target(self, kit):
+        assert type(kit.getAutoExposeConfig().target) == microspeclib.internal.util.MicroSpecInteger
+    def test_getAutoExposeConfig_Returns_MicroSpecInteger_target_tolerance(self, kit):
+        assert type(kit.getAutoExposeConfig().target_tolerance) == microspeclib.internal.util.MicroSpecInteger
+    def test_getAutoExposeConfig_Returns_MicroSpecInteger_max_exposure(self, kit):
+        assert type(kit.getAutoExposeConfig().max_exposure) == microspeclib.internal.util.MicroSpecInteger
+    def test_getAutoExposeConfig_Issues_timeout_warning_if_command_timeouts(
+            self, kit, monkeypatch
+            ):
+        with monkeypatch.context() as m:
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
+            with pytest.warns(UserWarning, match="Command getAutoExposeConfig timed out."):
+                kit.getAutoExposeConfig()
+    def test_getAutoExposeConfig_Returns_status_TIMEOUT_if_command_timeouts(
+            self, kit, monkeypatch
+            ):
+        with monkeypatch.context() as m:
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
+            with pytest.warns(UserWarning):
+                assert kit.getAutoExposeConfig().status == 'TIMEOUT'
+    def test_getAutoExposeConfig_Returns_max_tries_0_if_command_timeouts(
+            self, kit, monkeypatch
+            ):
+        with monkeypatch.context() as m:
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
+            with pytest.warns(UserWarning):
+                assert kit.getAutoExposeConfig().max_tries == 0
+    def test_getAutoExposeConfig_Returns_start_pixel_0_if_command_timeouts(
+            self, kit, monkeypatch
+            ):
+        with monkeypatch.context() as m:
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
+            with pytest.warns(UserWarning):
+                assert kit.getAutoExposeConfig().start_pixel == 0
+    def test_getAutoExposeConfig_Returns_stop_pixel_0_if_command_timeouts(
+            self, kit, monkeypatch
+            ):
+        with monkeypatch.context() as m:
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
+            with pytest.warns(UserWarning):
+                assert kit.getAutoExposeConfig().stop_pixel == 0
+    def test_getAutoExposeConfig_Returns_target_0_if_command_timeouts(
+            self, kit, monkeypatch
+            ):
+        with monkeypatch.context() as m:
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
+            with pytest.warns(UserWarning):
+                assert kit.getAutoExposeConfig().target == 0
+    def test_getAutoExposeConfig_Returns_target_tolerance_0_if_command_timeouts(
+            self, kit, monkeypatch
+            ):
+        with monkeypatch.context() as m:
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
+            with pytest.warns(UserWarning):
+                assert kit.getAutoExposeConfig().target_tolerance == 0
+    def test_getAutoExposeConfig_Returns_max_exposure_0_if_command_timeouts(
+            self, kit, monkeypatch
+            ):
+        with monkeypatch.context() as m:
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
+            with pytest.warns(UserWarning):
+                assert kit.getAutoExposeConfig().max_exposure == 0
+
+class TestCommandSetAutoExposeConfig(Setup):
+    def test_setAutoExposeConfig_Returns_a_reply_with_a_readable_repr(self, kit):
+        assert repr(kit.setAutoExposeConfig()) == "setAutoExposeConfig_response(status='OK')"
+    def test_Call_setAutoExposeConfig_using_default_params(self, kit):
+        assert kit.setAutoExposeConfig().status == 'OK'
+    def test_Call_setAutoExposeConfig_specifying_param_max_tries(self, kit):
+        valid_max_tries = 2
+        assert kit.setAutoExposeConfig(max_tries=valid_max_tries).status == 'OK'
+        assert kit.getAutoExposeConfig().max_tries == valid_max_tries
+    def test_setAutoExposeConfig_Returns_ERROR_if_param_max_tries_is_invalid(self, kit):
+        invalid_max_tries = 0
+        assert kit.setAutoExposeConfig(max_tries=invalid_max_tries).status == 'ERROR'
+    def test_setAutoExposeConfig_does_not_change_max_tries_if_param_max_tries_is_invalid(self, kit):
+        assert kit.setAutoExposeConfig().status == 'OK'
+        invalid_max_tries = 0
+        assert kit.setAutoExposeConfig(max_tries=invalid_max_tries).status == 'ERROR'
+        default_max_tries = 12
+        assert kit.getAutoExposeConfig().max_tries == default_max_tries
+    def test_Call_setAutoExposeConfig_specifying_param_start_pixel(self, kit):
+        valid_start_pixel = 7
+        assert kit.setAutoExposeConfig(start_pixel=valid_start_pixel).status == 'OK'
+        assert kit.getAutoExposeConfig().start_pixel == valid_start_pixel
+    def test_setAutoExposeConfig_Raises_TypeError_if_param_start_pixel_is_negative(self, kit):
+        invalid_start_pixel = -1
+        with pytest.raises(TypeError):
+            kit.setAutoExposeConfig(start_pixel=invalid_start_pixel)
+    @pytest.mark.skip
+    def test_setAutoExposeConfig_does_not_change_start_pixel_if_param_start_pixel_is_invalid(self, kit):
+        assert kit.setAutoExposeConfig().status == 'OK'
+        invalid_start_pixel = 0
+        assert kit.setAutoExposeConfig(start_pixel=invalid_start_pixel).status == 'ERROR'
+        default_start_pixel = 12
+        assert kit.getAutoExposeConfig().start_pixel == default_start_pixel
+    def test_setAutoExposeConfig_Returns_status_OK(self, kit):
+        assert kit.setAutoExposeConfig().status == 'OK'
+    def test_setAutoExposeConfig_Issues_timeout_warning_if_command_timeouts(
+            self, kit, monkeypatch
+            ):
+        with monkeypatch.context() as m:
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
+            with pytest.warns(UserWarning, match="Command setAutoExposeConfig timed out."):
+                kit.setAutoExposeConfig()
+    def test_setAutoExposeConfig_Returns_status_TIMEOUT_if_command_timeouts(
+            self, kit, monkeypatch
+            ):
+        with monkeypatch.context() as m:
+            m.setattr(kit, "is_out_of_time", lambda reply : "True")
+            with pytest.warns(UserWarning):
+                assert kit.setAutoExposeConfig().status == 'TIMEOUT'

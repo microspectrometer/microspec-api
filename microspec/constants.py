@@ -95,32 +95,7 @@ See Also
 --------
 OK
 """
-TIMEOUT = 2
-"""int: The command timed out before a response was received.
 
-For applications that run a long time, such as data loggers and
-free-running plot GUIs, there are occasional timeouts when
-calling :func:`~micropsec.commands.Devkit.captureFrame`. These
-applications should check the
-:class:`~micropsec.replies.captureFrame_response.status`
-attribute of responses to
-:func:`~micropsec.commands.Devkit.captureFrame` and ignore the
-data if the status is 'TIMEOUT'.
-
-A ``UserWarning`` is also issued when a timeout occurs,
-identifying which command timed out. This is not an exception, so
-it does not cause the application to terminate.
-
-Notes
------
-The :class:`~microspec.commands.Devkit` attribute ``timeout``
-defaults to 2 seconds, which is usually long enough to send a
-command, execute it on the dev-kit, and receive a response back
-on the host computer running the application. It is rare to
-observe a timeout when sending commands at the REPL or executing
-a script that runs a few commands and exits. Users can observe
-a timeout condition by setting a very short timeout such as 1ms.
-"""
 
 # led_setting
 GREEN = _constants['LEDGreen']
@@ -208,10 +183,15 @@ MAX_CYCLES = 65500 # 1310 milliseconds
 """int: Longest exposure time (integration time)."""
 MIN_CYCLES = 1 # 0.02 milliseconds
 """int: Shortest exposure time (integration time)."""
+HIT_TARGET = 1
+"""int: Auto-expose hit the target signal range."""
+GAVE_UP = 0
+"""int: Auto-expose did not hit the target signal range."""
+
 
 # Define user-friendly dicts to look up names from values in context.
-_status_constants   = [ OK,   ERROR ,  TIMEOUT  ]
-_status_names       = ['OK', 'ERROR', 'TIMEOUT' ]
+_status_constants   = [ OK,   ERROR ]
+_status_names       = ['OK', 'ERROR']
 status_dict = dict(zip(_status_constants, _status_names))
 """ """
 _led_setting_constants  = [ OFF,   GREEN,   RED ]
@@ -227,5 +207,7 @@ _gain_names      = ['GAIN1X', 'GAIN2_5X', 'GAIN4X', 'GAIN5X']
 gain_dict = dict(zip(_gain_constants, _gain_names))
 """ """
 row_dict = {ALL_ROWS: 'ALL_ROWS'}
+""" """
+success_dict = {GAVE_UP: 'GAVE_UP', HIT_TARGET: 'HIT_TARGET'}
 """ """
 

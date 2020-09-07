@@ -7,6 +7,32 @@ Example
 >>> import microspec
 >>> kit = microspec.Devkit()
 
+If ``status=='TIMEOUT'`` it means the command timed out before a
+response was received.
+
+For applications that run a long time, such as data loggers and
+free-running plot GUIs, there are occasional timeouts when
+calling :func:`~micropsec.commands.Devkit.captureFrame`. These
+applications should check the
+:class:`~micropsec.replies.captureFrame_response.status`
+attribute of responses to
+:func:`~micropsec.commands.Devkit.captureFrame` and ignore the
+data if the status is 'TIMEOUT'.
+
+A ``UserWarning`` is also issued when a timeout occurs,
+identifying which command timed out. This is not an exception, so
+it does not cause the application to terminate.
+
+Notes
+-----
+The :class:`~microspec.commands.Devkit` attribute ``timeout``
+defaults to 2 seconds, which is usually long enough to send a
+command, execute it on the dev-kit, and receive a response back
+on the host computer running the application. It is rare to
+observe a timeout when sending commands at the REPL or executing
+a script that runs a few commands and exits. Users can observe
+a timeout condition by setting a very short timeout such as 1ms.
+
 """
 
 __all__ = ['Devkit']
@@ -17,30 +43,74 @@ from microspec.helpers import *
 import microspec.replies as replies
 import warnings
 
-class TimeoutWarning():
+class TimeoutHandler():
+    """Handle case where serial communication timed out.
+    
+    :mod:`microspeclib` provides a user-configurable timeout. The
+    timeout sets how long to wait after sending a command. The return
+    value is ``None`` if a response is not received in that time.
+
+    Checking for a ``None`` return value is the only way to determined
+    that the command timedout.
+
+    Note this is different from an ``ERROR``. An ``ERROR`` **is** a
+    response from the firmware. It means the firmware did not understand
+    the command and the subsequent data received should be ignored.
+
+    This class, therefore, adds that missing functionality:
+
+    - if a TIMEOUT occurred (if the command return value is ``None``):
+
+        - :func:`warn_if_cmd_timedout` issues the ``UserWarning``
+        - :func:`is_out_of_time` returns ``True``
+
+            - the caller code (the command) is able to return an
+              appropriate response instead of ``None``
+
+    """
+
     def _issue_timeout_warning(self,
             command_name: str,
             suggestion:str =""
             ):
         warnings.warn(
             f"Command {command_name} timed out. {suggestion}",
-            stacklevel=2
+            stacklevel=4
             )
-    def _is_out_of_time(self, reply):
+    def is_out_of_time(self, reply):
         """Return True if the command timed out.
 
-        This exists solely for testing purposes.
-        It creates a seam where the unit tests monkeypatch a timeout
-        condition to test the path that issues the UserWarning when a
-        command timeouts.
+        This is a small helper to make caller code (the command)
+        readable.
+
+        It also enables testing the condition that the command
+        timed out:
+
+        - creates a seam where the unit tests monkeypatch a
+          timeout condition by making this function always return
+          ``True``
+        - returning ``True`` tests two code branches:
+
+            - func:`warn_if_cmd_timedout` issues a timeout
+              ``UserWarning``
+            - caller (the command) creates a TIMEOUT reply
+              instead of the usual reply
+
+        Parameters
+        ----------
+        reply:
+            The return value of the
+            :class:`~microspeclib.simple.MicrospecSimpleInterface`
+            command, *not* the return value of the commands
+            defined in :class:`Devkit`.
         """
         return True if reply == None else False
-    def handle_hardware_timeout(self,
+    def warn_if_cmd_timedout(self,
             reply,
             command_name: str,
-            suggestion:str = ""
-            ) -> bool:
-        """Return True and issue a warning if the command timed out.
+            suggestion: str = ""
+            ) -> None:
+        """Issue a warning if the command timed out.
 
         Parameters
         ----------
@@ -56,23 +126,64 @@ class TimeoutWarning():
             timeout. If omitted or an empty string, a standard
             suggestion is used.
         """
-        is_out_of_time = self._is_out_of_time(reply)
-        if is_out_of_time:
-            if suggestion == "":
-                suggestion=(""
-                "Expect this is a rare hardware event. "
-                f"Retry {command_name} and increase the timeout "
-                "if the command timed out again. "
-                "If that does not help, "
-                "try a different USB cable or USB port, "
-                "or a different host computer."
-                )
-                self._issue_timeout_warning(command_name, suggestion)
-        return is_out_of_time
+        # Define a default suggestion if no suggestion is given.
+        # default = (""
+        #         "Expect this is a rare hardware event. "
+        #         f"Retry {command_name} and increase the timeout "
+        #         "if the command timed out again. "
+        #         "If that does not help, "
+        #         "try a different USB cable or USB port, "
+        #         "or a different host computer."
+        #         )
+        # suggestion = default if suggestion == "" else suggestion
+        if self.is_out_of_time(reply):
+            self._issue_timeout_warning(command_name, suggestion)
 
+def raise_TypeError_if_any_int_args_are_negative(args: dict={}) -> None:
+    """Raise TypeError if any int arguments are negative.
 
+    :mod:`microspeclib` uses ``struct.pack()` to translate the
+    command and its arguments into a byte sequence to send over
+    serial.
 
-class Devkit(MicroSpecSimpleInterface, TimeoutWarning):
+    See: https://docs.python.org/3/library/struct.html#struct.pack
+
+    ``struct.pack()`` takes a "format" argument.
+
+    See: https://docs.python.org/3/library/struct.html#format-characters
+
+    :mod:`microspeclib` uses formats "B", "H", and "L".
+    These are unsigned integers, sized 1, 2, and 4 bytes
+    respectively.
+
+    Negative parameter values, therefore, are not allowed. But
+    :mod:`microspeclib` does not check for negative values. If a
+    user passes negative parameter values, the ``struct``
+    package's built-in exceptions show-up in the traceback.
+
+    At the level of application development with ``microspec``,
+    it is not immediately obvious that the problem is due to
+    using a negative value.
+    
+    ``microspec`` deals with this by checking for negative
+    parameter values in :class:`Devkit`.
+
+    Note: the dev-kit firmware already rejects out-of-range
+    values with an ERROR status, but it cannot reject a value if
+    the application exits due to an exception, and it needs to be
+    clear to the user what the cause of the exception is.
+    """
+    # Loop through the arguments.
+    for key in args:
+        # Only consider int arguments.
+        if type(args[key]) == int:
+            # Raise an error if it is negative.
+            if args[key] < 0:
+                raise TypeError(
+                    f"Parameter '{key}' must be non-negative."
+                    )
+
+class Devkit(MicroSpecSimpleInterface, TimeoutHandler):
     """Interface for dev-kit communication.
 
     Every communication with the dev-kit consists of:
@@ -124,6 +235,7 @@ class Devkit(MicroSpecSimpleInterface, TimeoutWarning):
         exposure_time = self.getExposure()
         self.exposure_time_cycles = exposure_time.cycles
         self.exposure_time_ms     = exposure_time.ms
+
     def getBridgeLED(
             self,
             led_num: int = 0 # LED0 is the only Bridge LED
@@ -148,7 +260,11 @@ class Devkit(MicroSpecSimpleInterface, TimeoutWarning):
         See Also
         --------
         setBridgeLED
+
         """
+
+        raise_TypeError_if_any_int_args_are_negative(locals())
+
         _reply = super().getBridgeLED(led_num)
         reply = replies.getBridgeLED_response(
             status = status_dict.get(_reply.status),
@@ -190,6 +306,8 @@ class Devkit(MicroSpecSimpleInterface, TimeoutWarning):
         --------
         getBridgeLED
         """
+
+        raise_TypeError_if_any_int_args_are_negative(locals())
 
         _reply = super().setBridgeLED(led_num, led_setting)
         reply = replies.setBridgeLED_response(
@@ -239,6 +357,8 @@ class Devkit(MicroSpecSimpleInterface, TimeoutWarning):
         --------
         setSensorLED
         """
+
+        raise_TypeError_if_any_int_args_are_negative(locals())
 
         _reply = super().getSensorLED(led_num)
         reply = replies.getSensorLED_response(
@@ -307,6 +427,9 @@ class Devkit(MicroSpecSimpleInterface, TimeoutWarning):
         setSensorLED_response(status='OK')
 
         """
+
+        raise_TypeError_if_any_int_args_are_negative(locals())
+
         _reply = super().setSensorLED(led_num, led_setting)
         reply = replies.setSensorLED_response(
                 status = status_dict.get(_reply.status)
@@ -332,17 +455,21 @@ class Devkit(MicroSpecSimpleInterface, TimeoutWarning):
         getSensorConfig_response(status='OK', binning='BINNING_ON',
                                  gain='GAIN1X', row_bitmap='ALL_ROWS')
         """
+
+        # Send command and get low-level reply.
         _reply = super().getSensorConfig()
-        is_out_of_time = self.handle_hardware_timeout(
-                            _reply,
-                            command_name="getSensorConfig"
-                            )
+
+        # Handle case where the command timed out.
+        self.warn_if_cmd_timedout(_reply, command_name="getSensorConfig")
+        TIMEOUT = self.is_out_of_time(_reply)
+
+        # Create high-level reply. Use bad data if there was a timeout.
         reply = replies.getSensorConfig_response(
                 status     = 'TIMEOUT',
-                binning    = '',
-                gain       = '',
-                row_bitmap = ''
-            ) if is_out_of_time else replies.getSensorConfig_response(
+                binning    = '', # <--- bad data
+                gain       = '', # <--- bad data
+                row_bitmap = ''  # <--- bad data
+            ) if TIMEOUT else replies.getSensorConfig_response(
                 status     = status_dict.get(_reply.status),
                 binning    = binning_dict.get(_reply.binning),
                 gain       = gain_dict.get(_reply.gain),
@@ -352,9 +479,10 @@ class Devkit(MicroSpecSimpleInterface, TimeoutWarning):
                     else _reply.row_bitmap
                     )
                 )
+
         return reply
 
-    def setSensorConfig( # TODO: add default values
+    def setSensorConfig(
             self,
             binning : int = BINNING_ON,
             gain : int = GAIN1X,
@@ -387,6 +515,9 @@ class Devkit(MicroSpecSimpleInterface, TimeoutWarning):
                                  gain='GAIN1X', row_bitmap='ALL_ROWS')
 
         """
+
+        raise_TypeError_if_any_int_args_are_negative(locals())
+
         _reply = super().setSensorConfig(binning, gain, row_bitmap)
         reply = replies.setSensorConfig_response(
                 status_dict.get(_reply.status)
@@ -476,20 +607,25 @@ class Devkit(MicroSpecSimpleInterface, TimeoutWarning):
         if time < MIN_CYCLES: time = MIN_CYCLES
         if time > MAX_CYCLES: time = MAX_CYCLES
 
+        # Send command and get low-level reply.
         _reply = super().setExposure(time)
-        is_out_of_time = self.handle_hardware_timeout(
-                _reply,
-                command_name="setExposure"
-                )
+
+        # Handle case where the command timed out.
+        self.warn_if_cmd_timedout(_reply, command_name="setExposure")
+        TIMEOUT = self.is_out_of_time(_reply)
+
+        # Create high-level reply.
         reply = replies.setExposure_response(
                 'TIMEOUT'
-            ) if is_out_of_time else replies.setExposure_response(
+            ) if TIMEOUT else replies.setExposure_response(
                 status_dict.get(_reply.status)
                 )
+
         # Update Devkit exposure time attrs
         if reply.status == 'OK':
             self.exposure_time_cycles = time
             self.exposure_time_ms = to_ms(time)
+
         return reply
 
     def getExposure(self):
@@ -512,24 +648,30 @@ class Devkit(MicroSpecSimpleInterface, TimeoutWarning):
         >>> kit.getExposure()
         getExposure_response(status='OK', ms=5.0, cycles=250)
         """
+
+        # Send command and get low-level reply.
         _reply = super().getExposure()
-        is_out_of_time = self.handle_hardware_timeout(
-                            _reply,
-                            command_name="getExposure"
-                            )
+
+        # Handle case where the command timed out.
+        self.warn_if_cmd_timedout(_reply, command_name="getExposure")
+        TIMEOUT = self.is_out_of_time(_reply)
+
+        # Create high-level reply. Use bad data if there was a timeout.
         reply = replies.getExposure_response(
                 status = 'TIMEOUT',
-                ms     = 0,
-                cycles = 0
-            ) if is_out_of_time else replies.getExposure_response(
+                ms     = 0, # <--- bad data
+                cycles = 0  # <--- bad data
+            ) if TIMEOUT else replies.getExposure_response(
                 status = status_dict.get(_reply.status),
                 ms     = to_ms(_reply.cycles),
                 cycles = _reply.cycles
                 )
+
         # Update Devkit exposure time attrs
         if reply.status == 'OK':
             self.exposure_time_cycles = reply.cycles
             self.exposure_time_ms = reply.ms
+
         return reply
 
     def captureFrame(self):
@@ -658,29 +800,36 @@ class Devkit(MicroSpecSimpleInterface, TimeoutWarning):
         # -----------------------------------
         # | Prevent timeout < exposure_time |
         # -----------------------------------
+        # ---BEGIN---
+
         # Save the user's timeout to restore later.
         _timeout = self.timeout
-        # Adjust timeout if necessary.
+
+        # Prevent case that timeout < exposure_time.
         if self.timeout*1000 < self.exposure_time_ms:
+
             # Set timeout one second longer than exposure time.
             self.timeout = self.exposure_time_ms/1000 + 1
+
         # Now it is safe to capture a frame.
         _reply = super().captureFrame()
+
         # Restore the user's timeout.
         self.timeout = _timeout
 
-        is_out_of_time = self.handle_hardware_timeout(
-                _reply,
-                command_name="captureFrame",
-                )
+        # ---END---
+
+        # Handle case where the command timed out.
+        self.warn_if_cmd_timedout(_reply, command_name="captureFrame")
+        TIMEOUT = self.is_out_of_time(_reply)
 
         # Create the reply. Use bad data if there was a timeout.
         reply = replies.captureFrame_response(
                     status = 'TIMEOUT',
-                    num_pixels = 0,
-                    pixels = [],
-                    frame = {}
-                ) if is_out_of_time else replies.captureFrame_response(
+                    num_pixels = 0, # <--- bad data
+                    pixels = [], # <------ bad data
+                    frame = {} # <-------- bad data
+                ) if TIMEOUT else replies.captureFrame_response(
                     status = status_dict.get(_reply.status),
                     num_pixels = _reply.num_pixels,
                     pixels = _reply.pixels,
@@ -691,14 +840,138 @@ class Devkit(MicroSpecSimpleInterface, TimeoutWarning):
                         range(1,_reply.num_pixels+1), # <- pixel number 1:N
                         _reply.pixels) # <---------------- counts
                         )
-                )
+                    )
+
         return reply
 
-    # def autoExposure(self):
-    #     _reply = super().autoExposure()
-    #     reply = replies.captureFrame_response(
-    #             status = 'TIMEOUT',
-    #             ) if is_out_of_time else replies.captureFrame_response(
-    #                     status = status_dict.get(_reply.status),
-    #                     )
-    #     return reply
+    def autoExposure(self):
+        """One-liner
+
+        Examples
+        --------
+
+        *Setup*:
+
+        >>> import microspec as usp
+        >>> kit = usp.Devkit()
+
+        """
+
+        # Send command and get low-level reply.
+        _reply = super().autoExposure()
+
+        # Handle case where the command timed out.
+        self.warn_if_cmd_timedout(_reply, command_name="autoExposure")
+        TIMEOUT = self.is_out_of_time(_reply)
+
+        # Create high-level reply. Use bad data if there was a timeout.
+        reply = replies.autoExposure_response(
+                status = 'TIMEOUT',
+                success = '', # <------- bad data
+                iterations = 0, # <----- bad data
+            ) if TIMEOUT else replies.autoExposure_response(
+                status = status_dict.get(_reply.status),
+                success = success_dict.get(_reply.success),
+                iterations = _reply.iterations
+                )
+
+        return reply
+
+    def getAutoExposeConfig(self):
+        """One-liner
+
+        Examples
+        --------
+
+        *Setup*:
+
+        >>> import microspec as usp
+        >>> kit = usp.Devkit()
+
+        """
+
+        # Send command and get low-level reply.
+        _reply = super().getAutoExposeConfig()
+
+        # Handle case where the command timed out.
+        self.warn_if_cmd_timedout(_reply, command_name="getAutoExposeConfig")
+        TIMEOUT = self.is_out_of_time(_reply)
+
+        # Create high-level reply. Use bad data if there was a timeout.
+        reply = replies.getAutoExposeConfig_response(
+                status = 'TIMEOUT',
+                max_tries        = 0, # <--- bad data
+                start_pixel      = 0, # <--- bad data
+                stop_pixel       = 0, # <--- bad data
+                target           = 0, # <--- bad data
+                target_tolerance = 0, # <--- bad data
+                max_exposure     = 0  # <--- bad data
+            ) if TIMEOUT else replies.getAutoExposeConfig_response(
+                status           = status_dict.get(_reply.status),
+                max_tries        = _reply.max_tries,
+                start_pixel      = _reply.start_pixel,
+                stop_pixel       = _reply.stop_pixel,
+                target           = _reply.target,
+                target_tolerance = _reply.target_tolerance,
+                max_exposure     = _reply.max_exposure
+                )
+
+        return reply
+
+    def setAutoExposeConfig(
+            self,
+            max_tries : int = 12,
+            start_pixel : int = 7,
+            stop_pixel : int = 392,
+            target : int = 46420,
+            target_tolerance : int = 3277,
+            max_exposure : int = 10000
+            ):
+        """One-liner
+
+        Examples
+        --------
+
+        *Setup*:
+
+        >>> import microspec as usp
+        >>> kit = usp.Devkit()
+
+        Configure auto-expose with ...:
+
+        >>> kit.setAutoExposeConfig()
+        setAutoExposeConfig_response(status='OK')
+        >>> kit.getAutoExposeConfig()
+        getAutoExposeConfig_response()
+
+        Configure the dev-kit with the default auto-expose parameters:
+
+        >>> kit.setAutoExposeConfig()
+        setAutoExposeConfig_response(status='OK')
+        >>> kit.getAutoExposeConfig()
+        getAutoExposeConfig_response()
+
+        """
+        raise_TypeError_if_any_int_args_are_negative(locals())
+
+        # Send command and get low-level reply.
+        _reply = super().setAutoExposeConfig(
+                            max_tries,
+                            start_pixel,
+                            stop_pixel,
+                            target,
+                            target_tolerance,
+                            max_exposure
+                            )
+
+        # Handle case where the command timed out.
+        self.warn_if_cmd_timedout(_reply, command_name="setAutoExposeConfig")
+        TIMEOUT = self.is_out_of_time(_reply)
+
+        # Create high-level reply.
+        reply = replies.setAutoExposeConfig_response(
+                    'TIMEOUT'
+                ) if TIMEOUT else replies.setAutoExposeConfig_response(
+                    status_dict.get(_reply.status)
+                )
+        return reply
