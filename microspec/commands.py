@@ -360,11 +360,15 @@ class Devkit(MicroSpecSimpleInterface, TimeoutHandler):
 
         raise_TypeError_if_any_int_args_are_negative(locals())
 
+        # Send command and get low-level reply.
         _reply = super().getSensorLED(led_num)
+
+        # Create high-level reply.
         reply = replies.getSensorLED_response(
                 status = status_dict.get(_reply.status),
                 led_setting = led_dict.get(_reply.led_setting)
                 )
+
         return reply
 
     def setSensorLED(

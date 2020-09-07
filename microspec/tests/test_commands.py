@@ -30,6 +30,10 @@ def restore_exposure_time(kit, verbose=False):
     kit.setExposure(ms=1)
     if verbose: print("Restored exposure time to default state.")
 
+def restore_autoexpose_config(kit, verbose=False):
+    kit.setAutoExposeConfig()
+    if verbose: print("Restored auto-expose configuration to default state.")
+
 @pytest.fixture(scope="class")
 def restore_defaults(kit): # test setup run once per class
     """Restore dev-kit to its default state before each test class.
@@ -129,6 +133,7 @@ def restore_defaults(kit): # test setup run once per class
     restore_Sensor_LEDs(kit, verbose)
     restore_pixel_configuration(kit, verbose)
     restore_exposure_time(kit, verbose)
+    restore_autoexpose_config(kit, verbose)
     yield
 
 class Setup():
@@ -217,6 +222,19 @@ class TestCommandSetBridgeLED(Setup):
         assert kit.setBridgeLED(usp.RED).status == 'OK'
 
 class TestCommandGetSensorLED(Setup):
+    def test_getSensorLED_Returns_a_reply_with_a_readable_repr(self, kit):
+        pattern = re.compile(""
+                    r"getSensorLED_response\("
+                            "status='OK', "
+                            "led_setting=(('OFF')|('GREEN')|('RED'))"
+                           r"\)"
+                    )
+        assert pattern.match(repr(
+                kit.getSensorLED(0)
+                ))
+        assert pattern.match(repr(
+                kit.getSensorLED(1)
+                ))
     def test_getSensorLED_Returns_status_OK_after_power_on(self, kit):
         assert kit.getSensorLED(0).status == 'OK'
     def test_getSensorLED_0_Returns_led_setting_OFF_after_power_on(self, kit):
@@ -364,7 +382,9 @@ class TestCommandSetSensorConfig(Setup):
     def test_setSensorConfig_Raises_TypeError_if_any_param_is_negative(self, kit):
         with pytest.raises(TypeError):
             kit.setSensorConfig(binning=-1)
+        with pytest.raises(TypeError):
             kit.setSensorConfig(gain=-1)
+        with pytest.raises(TypeError):
             kit.setSensorConfig(row_bitmap=-1)
     def test_setSensorConfig_Returns_OK_if_param_row_bitmap_is_0x00_ie_all_rows_off(self, kit):
         # Demonstrate it's OK to turn off all rows.
@@ -696,6 +716,20 @@ class TestCommandSetAutoExposeConfig(Setup):
         assert repr(kit.setAutoExposeConfig()) == "setAutoExposeConfig_response(status='OK')"
     def test_Call_setAutoExposeConfig_using_default_params(self, kit):
         assert kit.setAutoExposeConfig().status == 'OK'
+    def test_setAutoExposeConfig_Raises_TypeError_if_any_param_is_negative(self, kit):
+        NEGATIVE_PARAM = -1
+        with pytest.raises(TypeError):
+            kit.setAutoExposeConfig(max_tries=NEGATIVE_PARAM)
+        with pytest.raises(TypeError):
+            kit.setAutoExposeConfig(start_pixel=NEGATIVE_PARAM)
+        with pytest.raises(TypeError):
+            kit.setAutoExposeConfig(stop_pixel=NEGATIVE_PARAM)
+        with pytest.raises(TypeError):
+            kit.setAutoExposeConfig(target=NEGATIVE_PARAM)
+        with pytest.raises(TypeError):
+            kit.setAutoExposeConfig(target_tolerance=NEGATIVE_PARAM)
+        with pytest.raises(TypeError):
+            kit.setAutoExposeConfig(max_exposure=NEGATIVE_PARAM)
     def test_Call_setAutoExposeConfig_specifying_param_max_tries(self, kit):
         valid_max_tries = 2
         assert kit.setAutoExposeConfig(max_tries=valid_max_tries).status == 'OK'
@@ -713,16 +747,11 @@ class TestCommandSetAutoExposeConfig(Setup):
         valid_start_pixel = 7
         assert kit.setAutoExposeConfig(start_pixel=valid_start_pixel).status == 'OK'
         assert kit.getAutoExposeConfig().start_pixel == valid_start_pixel
-    def test_setAutoExposeConfig_Raises_TypeError_if_param_start_pixel_is_negative(self, kit):
-        invalid_start_pixel = -1
-        with pytest.raises(TypeError):
-            kit.setAutoExposeConfig(start_pixel=invalid_start_pixel)
-    @pytest.mark.skip
     def test_setAutoExposeConfig_does_not_change_start_pixel_if_param_start_pixel_is_invalid(self, kit):
         assert kit.setAutoExposeConfig().status == 'OK'
+        default_start_pixel = kit.getAutoExposeConfig().start_pixel
         invalid_start_pixel = 0
         assert kit.setAutoExposeConfig(start_pixel=invalid_start_pixel).status == 'ERROR'
-        default_start_pixel = 12
         assert kit.getAutoExposeConfig().start_pixel == default_start_pixel
     def test_setAutoExposeConfig_Returns_status_OK(self, kit):
         assert kit.setAutoExposeConfig().status == 'OK'
