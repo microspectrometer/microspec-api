@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 """Define classes of command responses.
 
+Every command has a response. This module defines the attributes
+each response has.
+
 Application code should **not** instantiate classes defined in
 this module. Command responses are generated internally by module
 :mod:`~microspec.commands`.
@@ -18,32 +21,15 @@ status : str
     Serial communication status is either
     :data:`~microspec.constants.OK`, 
     :data:`~microspec.constants.ERROR`, or
-    :data:`~microspec.constants.TIMEOUT`.
-
-    Applications usually do not need to check ``status`` because
-    the :mod:`~microspec.commands` check ``status`` internally
-    and either issue a warning or raise an exception if
-    ``status`` is not :data:`~microspec.constants.OK`.
-
-    Applications *should* check ``status`` for the specific
-    use-cases documented in the :mod:`~microspec.commands`.
-
-    :data:`~microspec.constants.OK`:
-
-        Usually ``status`` is ``'OK'``.
-
-    :data:`~microspec.constants.ERROR`:
-
-        ``'ERROR'`` indicates a serial communication error, so
-        the other response attributes are not valid.
+    ``TIMEOUT``.
 
     :data:`~microspec.constants.TIMEOUT`:
 
         ``'TIMEOUT'`` means the command timed out before a
         response was received from the dev-kit, so the other
-        response attributes are not valid. The timeout is set by
-        :class:`~microspec.commands.Devkit` attribute
-        ``timeout``.
+        response attributes are not valid. The timeout time in
+        seconds is set by :class:`~microspec.commands.Devkit`
+        attribute ``timeout``.
 """
 
 _led_setting = """\
@@ -80,6 +66,10 @@ _common = {
     "has_no_serial_attrs"   : _has_no_serial_attrs,
     "replaces_int_with_str" : _replaces_int_with_str,
     }
+
+# -----------
+# | Replies |
+# -----------
 
 getBridgeLED_response = namedtuple(
         'getBridgeLED_response',
@@ -171,31 +161,171 @@ getSensorConfig_response = namedtuple(
         'getSensorConfig_response',
         ['status', 'binning', 'gain', 'row_bitmap']
         )
+getSensorConfig_response.__doc__ = """
+Response to command :func:`~microspec.commands.Devkit.getSensorConfig`.
+
+Attributes
+----------
+{status}
+binning
+gain
+row_bitmap
+
+Notes
+-----
+{created_from}
+:data:`~microspeclib.datatypes.sensor.SensorGetSensorConfig`.
+
+See Also
+--------
+~microspec.commands.Devkit.getSensorConfig
+""".format(**_common)
 
 setSensorConfig_response = namedtuple(
         'setSensorConfig_response',
         ['status']
         )
+setSensorConfig_response.__doc__ = """
+Response to command :func:`~microspec.commands.Devkit.setSensorConfig`.
+
+Attributes
+----------
+{status}
+
+Notes
+-----
+{created_from}
+:data:`~microspeclib.datatypes.sensor.SensorSetSensorConfig`.
+
+See Also
+--------
+~microspec.commands.Devkit.setSensorConfig
+""".format(**_common)
 
 setExposure_response = namedtuple(
         'setExposure_response',
         ['status']
         )
+setExposure_response.__doc__ = """
+Response to command :func:`~microspec.commands.Devkit.setExposure`.
+
+Attributes
+----------
+{status}
+
+Notes
+-----
+{created_from}
+:data:`~microspeclib.datatypes.sensor.SensorSetExposure`.
+
+See Also
+--------
+~microspec.commands.Devkit.setExposure
+""".format(**_common)
 
 getExposure_response = namedtuple(
         'getExposure_response',
         ['status', 'ms', 'cycles']
         )
+getExposure_response.__doc__ = """
+Response to command :func:`~microspec.commands.Devkit.getExposure`.
+
+Attributes
+----------
+{status}
+ms
+cycles
+
+Notes
+-----
+{created_from}
+:data:`~microspeclib.datatypes.sensor.SensorGetExposure`.
+
+See Also
+--------
+~microspec.commands.Devkit.getExposure
+""".format(**_common)
 
 captureFrame_response = namedtuple(
         'captureFrame_response',
         ['status', 'num_pixels', 'pixels', 'frame']
         )
+captureFrame_response.__doc__ = """
+Response to command :func:`~microspec.commands.Devkit.captureFrame`.
+
+Attributes
+----------
+{status}
+        If :func:`captureFrame` timed out in a data logging
+        application, it might improve data quality to check for
+        ``status='TIMEOUT'`` to note a missing frame and skip
+        logging this bad dataset.
+
+        Similarly, in a GUI plotting application, it might
+        improve user experience (and simplify the plotting code)
+        to check for ``status='TIMEOUT'`` and replot the
+        *previous* (good) dataset rather than plot the bad
+        dataset.
+num_pixels
+pixels
+frame
+
+Notes
+-----
+{created_from}
+:data:`~microspeclib.datatypes.sensor.SensorCaptureFrame`.
+
+See Also
+--------
+~microspec.commands.Devkit.captureFrame
+""".format(**_common)
 
 autoExposure_response = namedtuple(
         'autoExposure_response',
         ['status', 'success', 'iterations']
         )
+autoExposure_response.__doc__ = """
+Response to command :func:`~microspec.commands.Devkit.autoExposure`.
+
+Attributes
+----------
+{status}
+        If :func:`autoExposure` timed out, consider decreasing
+        ``max_tries`` or ``max_exposure``, or consider increasing
+        the ``timeout``.
+
+success : :class:`~microspeclib.internal.util.MicroSpecInteger`
+
+  1: SUCCESS
+    The peak signal is in the target counts range.
+
+  0: FAILURE
+    The peak signal is not in the target counts range.
+    Fail for any of the following reasons:
+
+      - reached the maximum number of tries
+      - hit maximum exposure time and signal is below target range
+      - hit minimum exposure time and signal is above target range
+
+iterations : :class:`~microspeclib.internal.util.MicroSpecInteger`
+
+  Number of exposures tried by auto-expose.
+  Valid range: 1-255
+
+  ``iterations`` never exceeds
+  :func:`~microspec.commands.Devkit.setAutoExposeConfig`
+  parameter ``max_tries``, the maximum number of iterations to
+  try.
+
+Notes
+-----
+{created_from}
+:data:`~microspeclib.datatypes.sensor.SensorAutoExposure`.
+
+See Also
+--------
+~microspec.commands.Devkit.autoExposure
+""".format(**_common)
 
 getAutoExposeConfig_response = namedtuple(
         'getAutoExposeConfig_response',
@@ -208,8 +338,46 @@ getAutoExposeConfig_response = namedtuple(
             'target_tolerance',
             'max_exposure'
          ])
+getAutoExposeConfig_response.__doc__ = """
+Response to command :func:`~microspec.commands.Devkit.getAutoExposeConfig`.
+
+Attributes
+----------
+{status}
+max_tries
+start_pixel
+stop_pixel
+target
+target_tolerance
+max_exposure
+
+Notes
+-----
+{created_from}
+:data:`~microspeclib.datatypes.sensor.SensorGetAutoExposeConfig`.
+
+See Also
+--------
+~microspec.commands.Devkit.getAutoExposeConfig
+""".format(**_common)
 
 setAutoExposeConfig_response = namedtuple(
         'setAutoExposeConfig_response',
         ['status']
         )
+setAutoExposeConfig_response.__doc__ = """
+Response to command :func:`~microspec.commands.Devkit.setAutoExposeConfig`.
+
+Attributes
+----------
+{status}
+
+Notes
+-----
+{created_from}
+:data:`~microspeclib.datatypes.sensor.SensorSetAutoExposeConfig`.
+
+See Also
+--------
+~microspec.commands.Devkit.setAutoExposeConfig
+""".format(**_common)

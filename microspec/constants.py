@@ -75,6 +75,17 @@ _constants = dict(zip(_global_names, _global_values))
 OK = _constants['StatusOK']
 """int: The dev-kit successfully executed the command.
 
+``status=='OK'`` most of the time. Application code *usually*
+does not check ``status`` because the :mod:`~microspec.commands`
+check ``status`` internally and issue a warning or raise an
+exception if ``status`` is not :data:`~microspec.constants.OK`.
+
+Applications *should* check ``status`` if receiving
+a ``UserWarning`` that the command timed out. Specific
+:mod:`~microspec.commands` and :mod:`~microspec.replies` discuss
+application use cases where ``status=='TIMEOUT'`` is known to
+occur and how to handle such cases.
+
 See Also
 --------
 ERROR
@@ -82,14 +93,28 @@ ERROR
 ERROR = _constants['StatusError']
 """int: The dev-kit failed to execute the command.
 
-The usual cause is that the command was called with one or more
-invalid inputs. For example, ``42`` is invalid for ``led_num`` in
-``getBridgeLED(led_num=42)``.
+``status=='ERROR'`` indicates that serial communication
+succeeded, but the dev-kit firmware did not understand the
+command or its parameters. If ``status=='ERROR'``, the other
+response attributes are not valid. For example, if reading
+exposure time and ``status=='ERROR'``, the exposure time values
+are meaningless.
 
-Other possible reasons are:
+Application code (code using the API) **does not need to check
+for** ``status=='ERROR'``: it does not occur when using the API.
 
-    - the command itself is invalid
-    - serial communication failed
+When testing commands at the REPL, ``status=='ERROR'`` is useful
+for identifying invalid command parameters. For example, ``42``
+is invalid for ``led_num`` in ``getBridgeLED(led_num=42)``.
+
+There are two other possible reasons for ``status=='ERROR'``, but
+these cannot be replicated at the REPL when using the
+``microspec`` API:
+
+    - the command ID itself is invalid
+    - the host computer sent a valid command ID and valid
+      parameter values, but the bytes were corrupted (in a way
+      that did not cause serial communication to fail)
 
 See Also
 --------

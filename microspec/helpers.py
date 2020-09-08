@@ -15,6 +15,13 @@ def to_cycles(ms : float) -> int:
     int
         Exposure time in cycles.
 
+    Example
+    -------
+
+    >>> import microspec as usp
+    >>> usp.to_cycles(ms=0.8)
+    40
+
     See Also
     --------
     to_ms
@@ -34,6 +41,13 @@ def to_ms(cycles: int) -> float:
     -------
     float
         Time in milliseconds.
+
+    Example
+    -------
+
+    >>> import microspec as usp
+    >>> usp.to_ms(cycles=usp.MAX_CYCLES)
+    1310.0
 
     Notes
     -----

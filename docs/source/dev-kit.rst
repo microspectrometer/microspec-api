@@ -1,5 +1,7 @@
-Dev-kit
-=======
+.. _chromation-dev-kit:
+
+Chromation Dev-kit
+==================
 
 Open serial communication
 -------------------------
@@ -36,24 +38,29 @@ Open communication:
     >>> import microspec
     >>> kit = microspec.Devkit()
 
-Communication closes automatically on exit:
+Exit the REPL:
 
 .. code-block:: python
 
     >>> exit()
 
+Communication is **automatically closed**.
+
+Close communication manually with ``kit.serial.close()``.
 Manually closing communication is handy when testing commands at
-the REPL while developing an application. ``kit.serial.close()``
-at the REPL, run the application to test a change, then resume
-work at the REPL with ``kit.serial.open()``.
+the REPL while developing an application:
+
+    - use the REPL to test some code
+    - close communication at the REPL with ``kit.serial.close()``
+    - insert the code in the application
+    - run the application to test the change
+    - then resume work at the REPL with ``kit.serial.open()``
 
 Manually close serial communication with
 :func:`microspeclib.commands.Devkit.serial.close`:
 
-... code-block:: python
+.. code-block:: python
 
-    >>> import microspec
-    >>> kit = microspec.Devkit()
     >>> kit.serial.is_open
     True
     >>> kit.serial.close()
@@ -63,7 +70,7 @@ Manually close serial communication with
 Re-open serial communication after a close with
 :func:`microspeclib.commands.Devkit.serial.open`:
 
-... code-block:: python
+.. code-block:: python
 
     >>> kit.serial.close()
     >>> kit.serial.is_open
@@ -85,18 +92,24 @@ communication with the dev-kit.
 Open and close during pytest tests
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For tests defined in a single file, import ``microspec`` and open
-communication, and the serial close and open happens just as it
-does for any other application.
+For tests defined in a **single file**, serial open/close happens
+just as it does for any other application, i.e., open
+communication at the module level (i.e., at the top of the test
+script, outside of any test function or test class) and
+communication closes automatically when the test script
+terminates.
 
-For tests defined across multiple files, the tests run faster if
-the test suite opens communication at the beginning of the
+For tests defined across **multiple files**, the tests run faster
+if the test suite opens communication at the beginning of the
 session and then closes communication only when all tests are
 finished. Chromation recommends using ``pytest`` with a
 ``conftest.py`` to define a session-scoped test fixture that
 opens communication and returns the ``Devkit`` instance for use
 by the entire test session. This also reduces the number of lines
-of test code. From the ``conftest.py`` in ``microspec/tests``:
+of test code.
+
+For example, the ``conftest.py`` in ``microspec/tests`` defines a
+session-scope fixture named ``kit``:
 
 .. code-block:: python
 
@@ -104,6 +117,20 @@ of test code. From the ``conftest.py`` in ``microspec/tests``:
     def kit():
         """Open communication with the dev-kit once for all tests."""
         return usp.Devkit()
+
+Then tests access the instance of ``usp.Devkit()`` by taking
+``kit`` as an argument and using ``kit`` in the function body.
+
+For example, from ``microspec/tests/test_commands.py``:
+
+.. code-block:: python
+
+    class TestCommandGetExposure(Setup):
+        # Fixture 'kit' yields an instance of ``Devkit()``.
+        def test_Call_getExposure(self, kit): # fixture name: kit
+            # ``kit`` is the instance of ``Devkit()`` from the
+            # fixture:
+            assert kit.getExposure().status == 'OK'
 
 Here is a version of the above fixture for the case where the
 tests need setup before opening communication and teardown after
@@ -121,9 +148,13 @@ closing communication.
         print("\n...Closed communication with the dev-kit.")
 
 In the above example, the **setup** and **teardown** print a
-message when communication opens and closes. The open message
-prints only once at the **beginning** of the test suite. The
-close message prints only once at the **end** of the test suite.
+message when communication opens and closes. The scope is for the
+session, so:
+
+    - the open message prints only once at the **beginning** of
+      the test suite
+    - the close message prints only once at the **end** of the
+      test suite
 
 If the actual setup and teardown code contains ``print()``
 statements, run ``pytest`` with flag ``-s`` to make the
@@ -207,26 +238,12 @@ milliseconds.
 >>> usp.to_ms(cycles=250)
 5.0
 
->>> # Maximum allowed exposure time is 65500 cycles
+The maximum allowed exposure time is 65500 cycles:
+
 >>> usp.MAX_CYCLES
 65500
->>> # Maximum allowed exposure time is 1310.0 ms
->>> usp.to_ms(cycles=65500)
-1310.0
->>> # to_cycles() clamps the result at 65500
->>> usp.to_cycles(ms=1311)
-65500
->>> # Minimum allowed exposure time is 0.02 ms
+
+The minimum allowed exposure time is 1 cycle:
+
 >>> usp.MIN_CYCLES
 1
->>> usp.to_ms(cycles=1)
-0.02
->>> # cycles is assumed to be between 1 and 65500
->>> # but since milliseconds are never sent to the firmware
->>> # to_ms() does not clamp the milliseconds result
->>> usp.to_ms(cycles=75500)
-1510.0
->>> usp.to_ms(cycles=-1)
--0.02
-
-

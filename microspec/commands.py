@@ -79,14 +79,13 @@ def raise_TypeError_if_any_int_args_are_negative(args: dict={}) -> None:
     values with an ERROR status, but it cannot reject a value if
     the application exits due to an exception, and it needs to be
     clear to the user what the cause of the exception is.
-    """
-    """
+
     Example
     -------
 
     >>> import microspec as usp
-    >>> kit = usp.Devkit()
-    >>> kit.getBridgeLED(led_num = -1)
+    >>> kit = usp.Devkit() #doctest: +SKIP
+    >>> kit.getBridgeLED(led_num = -1) #doctest: +SKIP
     Traceback (most recent call last):
     ...
     TypeError: Parameter 'led_num' must be non-negative.
@@ -415,36 +414,33 @@ class Devkit(MicroSpecSimpleInterface, TimeoutHandler):
             LEDs from the application undermines the LEDs purpose as
             status indicators.
 
-        """
-        """
         Examples
         --------
 
         *Setup*:
 
-
         >>> import microspec as usp
-        >>> kit = usp.Devkit()
+        >>> kit = usp.Devkit() #doctest: +SKIP
 
         Turn led0 and led1 OFF:
 
-        >>> kit.setSensorLED(usp.OFF, 0)
+        >>> kit.setSensorLED(usp.OFF, 0) #doctest: +SKIP
         setSensorLED_response(status='OK')
-        >>> kit.setSensorLED(usp.OFF, 1)
+        >>> kit.setSensorLED(usp.OFF, 1) #doctest: +SKIP
         setSensorLED_response(status='OK')
 
         Turn led0 and led1 RED:
 
-        >>> kit.setSensorLED(usp.RED, 0)
+        >>> kit.setSensorLED(usp.RED, 0) #doctest: +SKIP
         setSensorLED_response(status='OK')
-        >>> kit.setSensorLED(usp.RED, 1)
+        >>> kit.setSensorLED(usp.RED, 1) #doctest: +SKIP
         setSensorLED_response(status='OK')
 
         Turn led0 and led1 GREEN:
 
-        >>> kit.setSensorLED(usp.GREEN, 0)
+        >>> kit.setSensorLED(usp.GREEN, 0) #doctest: +SKIP
         setSensorLED_response(status='OK')
-        >>> kit.setSensorLED(usp.GREEN, 1)
+        >>> kit.setSensorLED(usp.GREEN, 1) #doctest: +SKIP
         setSensorLED_response(status='OK')
 
         """
@@ -510,29 +506,28 @@ class Devkit(MicroSpecSimpleInterface, TimeoutHandler):
             row_bitmap : int = ALL_ROWS
             ):
         """One-liner
-        """
-        """
+
         Examples
         --------
 
         *Setup*:
 
         >>> import microspec as usp
-        >>> kit = usp.Devkit()
+        >>> kit = usp.Devkit() #doctest: +SKIP
 
         Configure the spectrometer with pixel binning off:
 
-        >>> kit.setSensorConfig(binning=usp.BINNING_OFF)
+        >>> kit.setSensorConfig(binning=usp.BINNING_OFF) #doctest: +SKIP
         setSensorConfig_response(status='OK')
-        >>> kit.getSensorConfig()
+        >>> kit.getSensorConfig() #doctest: +SKIP
         getSensorConfig_response(status='OK', binning='BINNING_OFF',
                                  gain='GAIN1X', row_bitmap='ALL_ROWS')
 
         Configure the spectrometer with the default pixel configuration:
 
-        >>> kit.setSensorConfig()
+        >>> kit.setSensorConfig() #doctest: +SKIP
         setSensorConfig_response(status='OK')
-        >>> kit.getSensorConfig()
+        >>> kit.getSensorConfig() #doctest: +SKIP
         getSensorConfig_response(status='OK', binning='BINNING_ON',
                                  gain='GAIN1X', row_bitmap='ALL_ROWS')
 
@@ -724,51 +719,6 @@ class Devkit(MicroSpecSimpleInterface, TimeoutHandler):
             Python dictionary where the key is the pixel number and
             the value is the 16-bit ADC counts at that pixel.
 
-        Notes
-        -----
-        If there is a timeout, :func:`captureFrame` returns
-        ``status='TIMEOUT'``, and fills the reply with obviously
-        bad data:
-
-            - ``num_pixels=0``
-            - ``pixels=[]``
-            - ``frame={}``
-
-        In a data logging application, it might improve data
-        quality to check for ``status='TIMEOUT'`` to note a
-        missing frame and skip logging this bad dataset.
-
-        Similarly, in a GUI plotting application, it might
-        improve user experience (and simplify the plotting code)
-        to check for ``status='TIMEOUT'`` and replot the
-        *previous* (good) dataset rather than plot the bad
-        dataset.
-
-        Applications are protected from accidentally setting a
-        :attr:`Devkit.timeout` that is shorter than the exposure
-        time (because this *guarantees* that :func:`captureFrame`
-        timeouts before a response is received). If the timeout
-        is less than the exposure time, :func:`captureFrame` uses
-        a :attr:`Devkit.timeout` that is one second longer than
-        the exposure time.
-
-        Even with :attr:`Devkit.timeout` one second longer than
-        the exposure time, if an application loops
-        :func:`captureFrame` for a long time (such as the data
-        logging and plotting GUI examples above), there will
-        likely be a timeout from the occasional hardware hiccup.
-
-        In this case, :func:`captureFrame` issues a
-        ``UserWarning`` describing which command caused the
-        timeout. This is only a warning because the timeout is
-        hardware-dependent. It does **not** indicate a bug in the
-        application code.
-
-        The timeout ``UserWarning`` prints to the console and can
-        safely be ignored. If the timeouts are a frequent event,
-        it indicates a problem with the host computer, its USB
-        port, or the USB cable.
-
         Examples
         --------
 
@@ -827,6 +777,42 @@ class Devkit(MicroSpecSimpleInterface, TimeoutHandler):
          (391, ...),
          (392,...)]
 
+        Notes
+        -----
+        If there is a timeout, :func:`captureFrame` returns
+        ``status='TIMEOUT'``, and fills the reply with obviously
+        bad data:
+
+            - ``num_pixels=0``
+            - ``pixels=[]``
+            - ``frame={}``
+
+        Applications are protected from accidentally setting a
+        :attr:`Devkit.timeout` that is shorter than the exposure
+        time (because this *guarantees* that :func:`captureFrame`
+        timeouts before a response is received).
+
+        If the timeout is less than the exposure time,
+        :func:`captureFrame` uses a :attr:`Devkit.timeout` that
+        is one second longer than the exposure time.
+
+        If an application loops :func:`captureFrame` for a long
+        time (such as the data logging and plotting GUI examples
+        above), there will likely be a timeout.
+
+        In this case, :func:`captureFrame` issues a
+        ``UserWarning`` describing which command caused the
+        timeout.
+
+            This is only a warning because the timeout is
+            hardware-dependent. It does **not** indicate a bug in
+            the application code.
+
+        The timeout ``UserWarning`` prints to the console and can
+        safely be ignored. If the timeouts are a frequent event,
+        it indicates a problem with the host computer, its USB
+        port, or the USB cable.
+
         """
         # -----------------------------------
         # | Prevent timeout < exposure_time |
@@ -876,15 +862,30 @@ class Devkit(MicroSpecSimpleInterface, TimeoutHandler):
         return reply
 
     def autoExposure(self):
-        """One-liner
+        """Auto-expose the spectrometer.
+
+        Tell dev-kit firmware to adjust spectrometer exposure time until
+        peak signal strength hits the auto-expose target.
+
+        Returns
+        -------
+        :class:`~microspec.replies.autoExposure_response`
+          - status
+          - success
+          - iterations
+
+
+        See Also
+        --------
+        setAutoExposeConfig: configure auto-expose parameters
+        getExposure: get the new exposure time after the auto-expose
+
 
         Examples
         --------
 
-        *Setup*:
-
-        >>> import microspec as usp
-        >>> kit = usp.Devkit()
+        >>> kit.autoExposure() # doctest: +SKIP
+        autoExposure_response(status='OK', success='GAVE_UP', iterations=4)
 
         """
 

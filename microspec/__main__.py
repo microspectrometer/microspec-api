@@ -50,7 +50,7 @@ def run_doctest_examples(submodules: list, FLAGS, verbose=False):
     else: _print_summary(submodules, FLAGS)
 run_doctest_examples(
         submodules = ['commands', 'replies', 'constants', 'helpers'],
-        # submodules = ['commands'],
+        # submodules = ['helpers'],
         # submodules = [],
         FLAGS = doctest.ELLIPSIS | doctest.FAIL_FAST | doctest.NORMALIZE_WHITESPACE,
         verbose=False
