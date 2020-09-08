@@ -66,13 +66,6 @@ https://docs.pytest.org/en/stable/capture.html
 import pytest
 import microspec as usp
 
-# @pytest.fixture(scope="session")
-# def kit(): # setup/teardown version
-#     """Open communication with the dev-kit once for all tests."""
-#     print("\nOpen communication with the dev-kit...") # setup
-#     yield usp.Devkit()
-#     print("\n...Closed communication with the dev-kit.") # teardown
-
 @pytest.fixture(scope="session")
 def kit(): # simpler version
     """Open communication with the dev-kit once for all tests."""

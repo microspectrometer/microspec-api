@@ -43,6 +43,64 @@ from microspec.helpers import *
 import microspec.replies as replies
 import warnings
 
+def raise_TypeError_if_any_int_args_are_negative(args: dict={}) -> None:
+    """Raise TypeError if any int arguments are negative.
+
+    Notes
+    -----
+
+    :mod:`microspeclib` uses ``struct.pack()` to translate the
+    command and its arguments into a byte sequence to send over
+    serial.
+
+    See: https://docs.python.org/3/library/struct.html#struct.pack
+
+    ``struct.pack()`` takes a "format" argument.
+
+    See: https://docs.python.org/3/library/struct.html#format-characters
+
+    :mod:`microspeclib` uses formats "B", "H", and "L".
+    These are unsigned integers, sized 1, 2, and 4 bytes
+    respectively.
+
+    Negative parameter values, therefore, are not allowed. But
+    :mod:`microspeclib` does not check for negative values. If a
+    user passes negative parameter values, the ``struct``
+    package's built-in exceptions show-up in the traceback.
+
+    At the level of application development with ``microspec``,
+    it is not immediately obvious that the problem is due to
+    using a negative value.
+    
+    ``microspec`` deals with this by checking for negative
+    parameter values in :class:`Devkit`.
+
+    Note: the dev-kit firmware already rejects out-of-range
+    values with an ERROR status, but it cannot reject a value if
+    the application exits due to an exception, and it needs to be
+    clear to the user what the cause of the exception is.
+    """
+    """
+    Example
+    -------
+
+    >>> import microspec as usp
+    >>> kit = usp.Devkit()
+    >>> kit.getBridgeLED(led_num = -1)
+    Traceback (most recent call last):
+    ...
+    TypeError: Parameter 'led_num' must be non-negative.
+    """
+    # Loop through the arguments.
+    for key in args:
+        # Only consider int arguments.
+        if type(args[key]) == int:
+            # Raise an error if it is negative.
+            if args[key] < 0:
+                raise TypeError(
+                    f"Parameter '{key}' must be non-negative."
+                    )
+
 class TimeoutHandler():
     """Handle case where serial communication timed out.
     
@@ -70,8 +128,8 @@ class TimeoutHandler():
     """
 
     def _issue_timeout_warning(self,
-            command_name: str,
-            suggestion:str =""
+            command_name : str,
+            suggestion : str = ""
             ):
         warnings.warn(
             f"Command {command_name} timed out. {suggestion}",
@@ -138,50 +196,6 @@ class TimeoutHandler():
         # suggestion = default if suggestion == "" else suggestion
         if self.is_out_of_time(reply):
             self._issue_timeout_warning(command_name, suggestion)
-
-def raise_TypeError_if_any_int_args_are_negative(args: dict={}) -> None:
-    """Raise TypeError if any int arguments are negative.
-
-    :mod:`microspeclib` uses ``struct.pack()` to translate the
-    command and its arguments into a byte sequence to send over
-    serial.
-
-    See: https://docs.python.org/3/library/struct.html#struct.pack
-
-    ``struct.pack()`` takes a "format" argument.
-
-    See: https://docs.python.org/3/library/struct.html#format-characters
-
-    :mod:`microspeclib` uses formats "B", "H", and "L".
-    These are unsigned integers, sized 1, 2, and 4 bytes
-    respectively.
-
-    Negative parameter values, therefore, are not allowed. But
-    :mod:`microspeclib` does not check for negative values. If a
-    user passes negative parameter values, the ``struct``
-    package's built-in exceptions show-up in the traceback.
-
-    At the level of application development with ``microspec``,
-    it is not immediately obvious that the problem is due to
-    using a negative value.
-    
-    ``microspec`` deals with this by checking for negative
-    parameter values in :class:`Devkit`.
-
-    Note: the dev-kit firmware already rejects out-of-range
-    values with an ERROR status, but it cannot reject a value if
-    the application exits due to an exception, and it needs to be
-    clear to the user what the cause of the exception is.
-    """
-    # Loop through the arguments.
-    for key in args:
-        # Only consider int arguments.
-        if type(args[key]) == int:
-            # Raise an error if it is negative.
-            if args[key] < 0:
-                raise TypeError(
-                    f"Parameter '{key}' must be non-negative."
-                    )
 
 class Devkit(MicroSpecSimpleInterface, TimeoutHandler):
     """Interface for dev-kit communication.
@@ -401,10 +415,13 @@ class Devkit(MicroSpecSimpleInterface, TimeoutHandler):
             LEDs from the application undermines the LEDs purpose as
             status indicators.
 
+        """
+        """
         Examples
         --------
 
         *Setup*:
+
 
         >>> import microspec as usp
         >>> kit = usp.Devkit()
@@ -493,7 +510,8 @@ class Devkit(MicroSpecSimpleInterface, TimeoutHandler):
             row_bitmap : int = ALL_ROWS
             ):
         """One-liner
-
+        """
+        """
         Examples
         --------
 
@@ -569,29 +587,30 @@ class Devkit(MicroSpecSimpleInterface, TimeoutHandler):
         TypeError: setExposure() got an unexpected keyword 'cycles'
         (requires 'ms' or 'cycles' but received both)
 
-        ``setExposure`` clamps time to the allowed range:
+        Exposure time must be within the allowed range:
 
-        >>> # Test clamping exposure time to MAX
-        >>> usp.MAX_CYCLES
-        65500
-        >>> # Setup: set exposure time one cycle higher than the maximum
+        >>> # Min exposure time in milliseconds:
+        >>> usp.to_ms(usp.MIN_CYCLES)
+        0.02
+        >>> # Max exposure time in milliseconds:
+        >>> usp.to_ms(usp.MAX_CYCLES)
+        1310.0
+        >>> # Try exceeding maximum exposure:
         >>> kit.setExposure(cycles=usp.MAX_CYCLES+1)
-        setExposure_response(status='OK')
-        >>> # Test: expect the exposure time is 65500, not 65501
-        >>> kit.getExposure()
-        getExposure_response(status='OK', ms=1310.0, cycles=65500)
+        Traceback (most recent call last):
+        ...
+        TypeError: Exposure time cannot be more than 65500 cycles.
 
-        >>> # Test clamping exposure time to MIN
-        >>> usp.MIN_CYCLES
-        1
-        >>> # Setup: set exposure time one cycle lower than the minimum
+        >>> # Try exposure time below the minimum:
         >>> kit.setExposure(cycles=usp.MIN_CYCLES-1)
-        setExposure_response(status='OK')
-        >>> # Test: expect the exposure time is 1, not 0
-        >>> kit.getExposure()
-        getExposure_response(status='OK', ms=0.02, cycles=1)
+        Traceback (most recent call last):
+        ...
+        TypeError: Exposure time cannot be less than 1 cycles.
 
         """
+
+        raise_TypeError_if_any_int_args_are_negative(locals())
+
         # Exposure time units are either ms or cycles
         if ms == None and cycles == None:
             raise TypeError(
@@ -607,9 +626,17 @@ class Devkit(MicroSpecSimpleInterface, TimeoutHandler):
         if ms == None: time = cycles
         else: time = to_cycles(ms)
 
-        # Clamp exposure time to the min/max allowed by firmware
-        if time < MIN_CYCLES: time = MIN_CYCLES
-        if time > MAX_CYCLES: time = MAX_CYCLES
+        # Raise an error if exposure time is outside the valid range.
+        if time < MIN_CYCLES:
+            raise TypeError(
+                "Exposure time cannot be less than "
+                f"{MIN_CYCLES} cycles."
+                )
+        if time > MAX_CYCLES:
+            raise TypeError(
+                "Exposure time cannot be more than "
+                f"{MAX_CYCLES} cycles."
+                )
 
         # Send command and get low-level reply.
         _reply = super().setExposure(time)
@@ -946,14 +973,20 @@ class Devkit(MicroSpecSimpleInterface, TimeoutHandler):
         >>> kit.setAutoExposeConfig()
         setAutoExposeConfig_response(status='OK')
         >>> kit.getAutoExposeConfig()
-        getAutoExposeConfig_response()
+        getAutoExposeConfig_response(status='OK', max_tries=12,
+                                     start_pixel=7, stop_pixel=392,
+                                     target=46420, target_tolerance=3277,
+                                     max_exposure=10000)
 
         Configure the dev-kit with the default auto-expose parameters:
 
         >>> kit.setAutoExposeConfig()
         setAutoExposeConfig_response(status='OK')
         >>> kit.getAutoExposeConfig()
-        getAutoExposeConfig_response()
+        getAutoExposeConfig_response(status='OK', max_tries=12,
+                                    start_pixel=7, stop_pixel=392,
+                                    target=46420, target_tolerance=3277,
+                                    max_exposure=10000)
 
         """
         raise_TypeError_if_any_int_args_are_negative(locals())
@@ -971,6 +1004,55 @@ class Devkit(MicroSpecSimpleInterface, TimeoutHandler):
         # Handle case where the command timed out.
         self.warn_if_cmd_timedout(_reply, command_name="setAutoExposeConfig")
         TIMEOUT = self.is_out_of_time(_reply)
+
+        # TODO: delete this after firmware bug is fixed.
+        #
+        # FIRMWARE BUG:
+        # ``max_exposure`` is sometimes written with 4112 instead of
+        # whatever value (specified or default) is passed with the
+        # command.
+        #
+        # This is a firmware bug. Don't know why it happens.
+        #
+        # The bug is repeatable:
+        # Call setAutoExposeConfig followed by getAutoExposeConfig about
+        # four or five times. Initially they all work as expected, then
+        # they start alternating:
+        # every other time setAutoExposeConfig is called, the
+        # max_exposure gets set to 4112:
+        # >>> kit.setAutoExposeConfig(); reply1 = kit.getAutoExposeConfig();
+        # ... kit.setAutoExposeConfig(); reply2 = kit.getAutoExposeConfig();
+        # ... print(f"{reply1.max_exposure}, {reply2.max_exposure}")
+        # 10000, 4112
+        #
+        # TEMPORARY FIX:
+        # Check if max_exposure if 4112. If so, just setAutoExposeConfig
+        # again. I have not observed 4112 written consecutively.
+        # Test that this fix is good enough:
+        # >>> for i in range(1,1000):
+        # ...    kit.setAutoExposeConfig()
+        # ...    reply = kit.getAutoExposeConfig()
+        # ...    if i%100 == 0: print(i)
+        # ...    if reply.max_exposure != 10000: print(reply.max_exposure)
+        # 100
+        # 200
+        # 300
+        # 400
+        # 500
+        # 600
+        # 700
+        # 800
+        # 900
+        if self.getAutoExposeConfig().max_exposure == 4112:
+            # Re-Send command and get low-level reply.
+            _reply = super().setAutoExposeConfig(
+                                max_tries,
+                                start_pixel,
+                                stop_pixel,
+                                target,
+                                target_tolerance,
+                                max_exposure
+                                )
 
         # Create high-level reply.
         reply = replies.setAutoExposeConfig_response(

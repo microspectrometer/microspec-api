@@ -8,14 +8,11 @@ def to_cycles(ms : float) -> int:
     Parameters
     ----------
     ms
-        Exposure time in milliseconds. Valid exposure times are
-        from 0.02ms to 1310.0ms. ``ms`` is clamped to these
-        values to guarantee the return value is a valid exposure
-        time.
+        Exposure time in milliseconds.
 
     Returns
     -------
-    float
+    int
         Exposure time in cycles.
 
     See Also
@@ -23,10 +20,6 @@ def to_cycles(ms : float) -> int:
     to_ms
     """
 
-    # Do not return cycles < minimum allowed cycles
-    if ms < 0.02: ms = 0.02
-    # Do not return cycles > maximum allowed cycles
-    if ms > 1310: ms = 1310
     return round(ms*1e-3/20e-6)
 
 def to_ms(cycles: int) -> float:

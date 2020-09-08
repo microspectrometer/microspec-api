@@ -462,18 +462,22 @@ class TestCommandSetExposure(Setup):
     def test_setExposure_Raises_TypeError_if_there_is_more_than_one_time_param(self, kit):
         with pytest.raises(TypeError):
             kit.setExposure(ms=5, cycles=250)
-    def test_setExposure_Clamps_exposure_time_to_the_valid_range(self, kit):
+    def test_setExposure_Raises_TypeError_if_exposure_time_is_negative(self, kit):
         negative_time = -1
-        assert kit.setExposure(cycles=negative_time).status == 'OK'
-        assert kit.getExposure().cycles == usp.MIN_CYCLES
-        assert kit.setExposure(ms=negative_time).status == 'OK'
-        assert kit.getExposure().ms == usp.to_ms(usp.MIN_CYCLES)
-        too_many_cycles = 65536 # > 65500
-        assert kit.setExposure(cycles=too_many_cycles).status == 'OK'
-        assert kit.getExposure().cycles == usp.MAX_CYCLES
-        too_many_ms = 1400 # > 1310
-        assert kit.setExposure(ms=too_many_ms).status == 'OK'
-        assert kit.getExposure().ms == usp.to_ms(usp.MAX_CYCLES)
+        with pytest.raises(TypeError):
+            kit.setExposure(cycles=negative_time)
+        with pytest.raises(TypeError):
+            kit.setExposure(ms=negative_time)
+    def test_setExposure_Raises_TypeError_if_exposure_time_is_less_than_MIN_CYCLES(self, kit):
+        with pytest.raises(TypeError):
+            kit.setExposure(cycles=usp.MIN_CYCLES-1)
+        with pytest.raises(TypeError):
+            kit.setExposure(ms=usp.to_ms(usp.MIN_CYCLES-1))
+    def test_setExposure_Raises_TypeError_if_exposure_time_is_more_than_MAX_CYCLES(self, kit):
+        with pytest.raises(TypeError):
+            kit.setExposure(cycles=usp.MAX_CYCLES+1)
+        with pytest.raises(TypeError):
+            kit.setExposure(ms=usp.to_ms(usp.MAX_CYCLES+1))
     def test_See_these_examples_for_setExposure(self, kit):
         assert usp.to_ms(usp.MIN_CYCLES) == 0.02
         assert usp.to_ms(usp.MAX_CYCLES) == 1310.0
