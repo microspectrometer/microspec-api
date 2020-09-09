@@ -3,7 +3,7 @@ Create an API-wrapper to simplify applications using the
 
 # Next steps
 
-- [ ] wrap calls:
-    - [ ] give default values
-    - [ ] add docstrings
+- [x] wrap calls:
+    - [x] give default values
+- [ ] add docstrings
 - [ ] integrate with project `microspec` as package `microspec`
