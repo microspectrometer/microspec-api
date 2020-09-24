@@ -7,10 +7,13 @@ Create an API-wrapper to simplify applications using the
     - [x] give default values
 - [ ] add docstrings
 - [ ] integrate with project `microspec` as package `microspec`
-    - [ ] copy `microspec-api/microspec` into `microspec/src`,
-        - [ ] update the `setup.py` to include the new
-          `microspec/src/micropsec`
-        - [ ] test the new `microspec` API works
+    - [x] copy `microspec-api/microspec` into `microspec/src`,
+        - [x] update the `setup.py` to include the new
+          `microspec/src/micropsec`: nothing to do,
+          `find_packages()` handles this
+        - [x] test the new `microspec` API works: yes
+    - [ ] temporarily publish the docs using `microspec-api`
+        - take this down later after docs are integrated
     - [ ] copy the `microspec-api/docs` into `microspec/doc`
         - [ ] reorganize `microspec/doc` to integrate with
           `micropsec-api/docs`
