@@ -1,0 +1,2 @@
+microspec
+pyserial==3.4
